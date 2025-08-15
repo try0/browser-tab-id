@@ -31,17 +31,9 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
                 // 一定件数ごとにクリア
                 let modAutoId = autoId % maxCount;
                 if (modAutoId === 0) {
-                    if (maxCount * 10 > autoId) {
-                        // autoIncrementが大きくなりすぎないようにクリア
-                        setTimeout(() => {
-                            resetAutoIncrement(option);
-                        }, 0);
-                    } else {
-                        // データベースが大きくなりすぎた場合はクリア
-                        setTimeout(() => {
-                            clearIndexedDB(option);
-                        }, 0);
-                    }
+                    setTimeout(() => {
+                        clearIndexedDB(option);
+                    }, 0);
                 }
 
                 resolve(modAutoId.toString());
@@ -84,30 +76,3 @@ async function clearIndexedDB(option: BrowserTabIdOption): Promise<void> {
     }
 }
 
-async function resetAutoIncrement(option: BrowserTabIdOption): Promise<void> {
-    return new Promise((resolve, reject) => {
-        // 既存のデータベースを削除
-        const deleteReq = indexedDB.deleteDatabase(option.indexedDBName);
-
-        deleteReq.onsuccess = () => {
-            // 新しいデータベースを作成（autoIncrementは1から開始）
-            const openReq = indexedDB.open(option.indexedDBName, 1);
-
-            openReq.onupgradeneeded = () => {
-                const db = openReq.result;
-                if (!db.objectStoreNames.contains("ids")) {
-                    db.createObjectStore("ids", { keyPath: "id", autoIncrement: true });
-                }
-            };
-
-            openReq.onsuccess = () => {
-                openReq.result.close();
-                resolve();
-            };
-
-            openReq.onerror = () => reject(openReq.error);
-        };
-
-        deleteReq.onerror = () => reject(deleteReq.error);
-    });
-}

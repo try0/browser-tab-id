@@ -135,8 +135,8 @@ function notifyGeneratedId(tabId: string): void {
  * @param tabId 
  */
 function setTabId(tabId: string): void {
-    notifyGeneratedId(tabId);
     window.sessionStorage.setItem(option.tabIdStorageKey, tabId);
+    notifyGeneratedId(tabId);
 }
 
 /**
@@ -154,10 +154,12 @@ export function getTabId(): string {
  * @param initOption 
  * @returns 
  */
-export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string | null> {
+export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
     option = { ...option, ...initOption };
+
     initializeChannel();
+    channel!.postMessage({ type: 'request-generated-id' });
 
     // タブIDがすでに存在するか確認
     checkLevel = "session-storage";
