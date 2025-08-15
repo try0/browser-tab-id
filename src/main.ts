@@ -1,3 +1,4 @@
+import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./indexeddb";
 import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, MessageData } from "./types";
 
@@ -18,55 +19,134 @@ let option: BrowserTabIdOption = {
     randomDigits: 8,
     channelName: "btid_channel",
     channelTimeout: 600,
+    enableLocalStorageTransport: true,
     useIndexedDB: true,
     indexedDBName: "btid_db",
     cycleCounterDigits: 4,
 };
 
 
-// iOSだとバックグラウンドタブとの通信うまくいかないかも
-let channel: BroadcastChannel | null = null;
+let transportRacer: TransportRacer | null = null;
 
 /**
- * BroadcastChannelを初期化します。
+ * 他タブとの重複をチェックします（統一インターフェース使用）
  */
-function initializeChannel() {
-    if (channel) {
-        channel.close();
-        channel = null;
-        window.removeEventListener("beforeunload", closeChannel);
-    }
-    channel = new BroadcastChannel(option.channelName);
-    channel.addEventListener("message", (event) => {
-        if (event.data && typeof event.data === "object") {
-            const { type, tabId, requestId } = event.data as MessageData;
-            if (type === "check-duplicate") {
-                // 他タブから重複チェック要求を受信
-                const myTabId = getTabId();
-                if (myTabId && myTabId === tabId) {
-                    // 重複が発見された場合のみ応答
-                    channel!.postMessage({
-                        type: "found-duplicate",
-                        tabId: myTabId,
-                        requestId: requestId
-                    });
-                }
+async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const requestId = Date.now().toString() + Math.random().toString(36);
+        let duplicateFound = false;
+        let resolved = false;
+        let responseCount = 0;
+        const maxRetries = 3;
+        const retryInterval = 100;
+
+        const resolveOnce = (found: boolean, transportName: string) => {
+            if (!resolved) {
+                resolved = true;
+                console.log(`Duplicate check resolved by ${transportName}: found=${found}, responses=${responseCount}`);
+                resolve(found);
             }
+        };
+
+        // 重複応答リスナー
+        const messageHandler = (message: MessageData, transport: any) => {
+            if (message.type === "found-duplicate" && message.requestId === requestId) {
+                duplicateFound = true;
+                responseCount++;
+                resolveOnce(true, transport.name);
+            }
+        };
+
+        transportRacer!.onMessage(messageHandler);
+
+        // 複数回送信
+        const sendDuplicateCheck = (attempt: number) => {
+            if (attempt < maxRetries && !resolved) {
+                const message: MessageData = {
+                    type: "check-duplicate",
+                    tabId: tabId,
+                    requestId: requestId,
+                };
+
+                // 全トランスポートで送信
+                transportRacer!.broadcast(message);
+
+                setTimeout(() => {
+                    sendDuplicateCheck(attempt + 1);
+                }, retryInterval);
+            }
+        };
+
+        sendDuplicateCheck(0);
+
+        // タイムアウト処理
+        setTimeout(() => {
+            transportRacer!.offMessage(messageHandler);
+            resolveOnce(duplicateFound, "timeout");
+        }, option.channelTimeout);
+    });
+}
+
+/**
+ * トランスポートを初期化します
+ */
+function initializeTransports() {
+    if (transportRacer) {
+        transportRacer.cleanup();
+    }
+
+    const transports = [];
+
+    // BroadcastChannel トランスポートを追加
+    try {
+        transports.push(new BroadcastChannelTransport(option.channelName));
+    } catch (error) {
+        console.warn("BroadcastChannel not available:", error);
+    }
+
+    // localStorage トランスポートを追加
+    if (option.enableLocalStorageTransport) {
+        try {
+            transports.push(new LocalStorageTransport("btid_msg"));
+        } catch (error) {
+            console.warn("localStorage transport not available:", error);
+        }
+    }
+
+    transportRacer = new TransportRacer(transports);
+
+    // 重複チェックメッセージのハンドラー
+    transportRacer.onMessage((message, transport) => {
+        if (message.type === "check-duplicate") {
+            handleDuplicateCheckMessage(message, transport.name);
         }
     });
-    window.addEventListener("beforeunload", closeChannel);
+
+    console.log("Initialized transports:", transportRacer.getTransportNames());
+
+    window.addEventListener("beforeunload", () => {
+        transportRacer?.cleanup();
+    });
 }
 
 /**
- * BroadcastChannelを閉じます。
+ * 重複チェックメッセージを処理します
  */
-function closeChannel() {
-    if (channel) {
-        channel.close();
-        channel = null;
+function handleDuplicateCheckMessage(message: MessageData, transportName: string) {
+    const { tabId, requestId } = message;
+    const myTabId = getTabId();
+
+    if (myTabId && myTabId === tabId) {
+        const response: MessageData = {
+            type: "found-duplicate",
+            tabId: myTabId,
+            requestId: requestId,
+        };
+
+        // 全トランスポートで応答
+        transportRacer!.broadcast(response);
     }
 }
-
 
 /**
  * タブIDを生成します。
@@ -76,23 +156,26 @@ function closeChannel() {
 async function generateTabId(): Promise<string> {
     // 時間ベースとランダム数値を組み合わせて生成
     const timestamp = Date.now().toString();
-    let cycleNumber: string = "0";
+    let cycleNumber: number = 0;
     try {
         if (option.useIndexedDB) {
             // autoincrementを使用してユニークな数字を生成
             cycleNumber = await incrementCycleCounter(option);
         }
     } catch (e) {
-        cycleNumber = "0";
+        console.warn("IndexedDB increment failed, using fallback:", e);
+        cycleNumber = 0;
     }
 
     const random = generateRandomNumber();
     let id = timestamp;
     if (option.randomDigits > 0) {
+        // ランダム部あり
         id += `_${random}`;
     }
     if (option.cycleCounterDigits > 0) {
-        id += `_${cycleNumber.padStart(option.cycleCounterDigits, '0')}`;
+        // リングカウンター部あり
+        id += `_${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
     }
 
     return id;
@@ -127,52 +210,6 @@ function setTabId(tabId: string): void {
 }
 
 /**
- * 他タブとの重複をチェックします
- * 
- * @param tabId チェックするタブID
- * @returns 重複がある場合true
- */
-async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
-    return new Promise(async (resolve) => {
-        const requestId = Date.now().toString() + Math.random().toString(36);
-
-        let found = false;
-
-        // 重複応答を受信するリスナー
-        const duplicateListener = (event: MessageEvent) => {
-            if (event.data && typeof event.data === "object") {
-                const { type, requestId: responseRequestId } = event.data as MessageData;
-                if (type === "found-duplicate" && responseRequestId === requestId) {
-                    found = true;
-                    resolve(true);
-                }
-            }
-        };
-
-        channel!.addEventListener("message", duplicateListener);
-
-        // 他タブに重複チェックを要求
-        setTimeout(() => {
-            channel!.removeEventListener("message", duplicateListener);
-            resolve(found);
-        }, option.channelTimeout);
-
-        for (let i = 0; i < 2; i++) {
-            channel!.postMessage({
-                type: "check-duplicate",
-                tabId: tabId,
-                requestId: requestId
-            });
-            await new Promise(r => setTimeout(r, 100));
-            if (found) {
-                break;
-            }
-        }
-
-    });
-}
-
-/**
  * セッションストレージからタブIDを取得します。
  * 
  * @returns 
@@ -190,8 +227,15 @@ export function getTabId(): string {
 export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
     option = { ...option, ...initOption };
+    // 設定値の検証
+    if (option.randomDigits < 0 || option.randomDigits > 10) {
+        throw new Error("randomDigits must be between 0 and 10");
+    }
+    if (option.cycleCounterDigits < 0 || option.cycleCounterDigits > 10) {
+        throw new Error("cycleCounterDigits must be between 0 and 10");
+    }
 
-    initializeChannel();
+    initializeTransports();
 
     // タブIDがすでに存在するか確認
     checkLevel = "session-storage";

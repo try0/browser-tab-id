@@ -21,6 +21,10 @@ export interface BrowserTabIdOption {
      */
     channelTimeout: number;
     /**
+     * ブラウザのローカルストレージを使用するかどうか
+     */
+    enableLocalStorageTransport: boolean;
+    /**
      * IndexedDBを使用するかどうか
      */
     useIndexedDB: boolean;
@@ -54,6 +58,29 @@ export interface MessageData {
 };
 
 /**
+ * トランスポート抽象インターフェース
+ */
+export interface Transport {
+    readonly name: string;
+    /**
+     * イベントを送信します。
+     *
+     * @param message
+     */
+    send(message: MessageData): void;
+    /**
+     * 受信イベントをハンドリングします。
+     * 
+     * @param callback 
+     */
+    onMessage(callback: (message: MessageData) => void): void;
+    /**
+     * 後処理
+     */
+    cleanup(): void;
+};
+
+/**
  * ID生成状況
  */
 export type GeneratedState =
@@ -69,3 +96,4 @@ export type CheckLevel =
     "session-storage" |
     "opener-session-storage" |
     "broadcast-channel";
+

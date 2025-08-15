@@ -1,29 +1,50 @@
 import type { BrowserTabIdOption } from "./types";
 
+// 共通定数
+const OBJECT_STORE_NAME = "ids";
+const DB_VERSION = 1;
+
 /**
- * IndexedDBからユニークな数字を生成します。
- * 
- * @returns 
+ * IndexedDBを開く共通関数
  */
-export async function incrementCycleCounter(option: BrowserTabIdOption): Promise<string> {
-
-    const maxCount = Math.min(10000000, Math.pow(10, option.cycleCounterDigits));
-
+function openDatabase(option: BrowserTabIdOption): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(option.indexedDBName, 1);
+        const request = indexedDB.open(option.indexedDBName, DB_VERSION);
+        
         request.onupgradeneeded = () => {
             const db = request.result;
-            if (!db.objectStoreNames.contains("ids")) {
-                db.createObjectStore("ids", { keyPath: "id", autoIncrement: true });
+            if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
+                db.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id", autoIncrement: true });
             }
         };
+        
         request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            const db = request.result;
-            const tx = db.transaction("ids", "readwrite");
-            const store = tx.objectStore("ids");
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+/**
+ * トランザクションとオブジェクトストアを取得する共通関数
+ */
+function getObjectStore(db: IDBDatabase, mode: IDBTransactionMode = "readonly"): IDBObjectStore {
+    const transaction = db.transaction(OBJECT_STORE_NAME, mode);
+    return transaction.objectStore(OBJECT_STORE_NAME);
+}
+
+/**
+ * IndexedDBからユニークな数字を生成します。
+ */
+export async function incrementCycleCounter(option: BrowserTabIdOption): Promise<number> {
+    const maxCount = Math.min(10000000, Math.pow(10, option.cycleCounterDigits));
+
+    return new Promise(async (resolve, reject) => {
+        try {
+            const db = await openDatabase(option);
+            const store = getObjectStore(db, "readwrite");
+            
             // 空データを追加してautoIncrement値を得る
             const addReq = store.add({});
+            
             addReq.onsuccess = () => {
                 // addReq.resultがautoIncrementされた数値
                 const autoId = addReq.result as number;
@@ -36,14 +57,17 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
                     }, 0);
                 }
 
-                resolve(modAutoId.toString());
+                resolve(modAutoId);
                 db.close();
             };
+            
             addReq.onerror = () => {
                 reject(addReq.error);
                 db.close();
             };
-        };
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -52,27 +76,24 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
  */
 async function clearIndexedDB(option: BrowserTabIdOption): Promise<void> {
     try {
-        const request = indexedDB.open(option.indexedDBName, 1);
+        const db = await openDatabase(option);
+        const store = getObjectStore(db, "readwrite");
+        
         return new Promise((resolve, reject) => {
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction("ids", "readwrite");
-                const store = tx.objectStore("ids");
-
-                const clearReq = store.clear();
-                clearReq.onsuccess = () => {
-                    db.close();
-                    resolve();
-                };
-                clearReq.onerror = () => {
-                    db.close();
-                    reject(clearReq.error);
-                };
+            const clearReq = store.clear();
+            
+            clearReq.onsuccess = () => {
+                db.close();
+                resolve();
             };
-            request.onerror = () => reject(request.error);
+            
+            clearReq.onerror = () => {
+                db.close();
+                reject(clearReq.error);
+            };
         });
     } catch (error) {
         console.warn("Failed to clear IndexedDB:", error);
+        throw error;
     }
 }
-
