@@ -17,7 +17,7 @@ let option: BrowserTabIdOption = {
     tabIdStorageKey: "btid",
     randomDigits: 8,
     channelName: "btid_channel",
-    channelTimeout: 500,
+    channelTimeout: 600,
     useIndexedDB: true,
     indexedDBName: "btid_db",
     cycleCounterDigits: 4,
@@ -133,14 +133,17 @@ function setTabId(tabId: string): void {
  * @returns 重複がある場合true
  */
 async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
         const requestId = Date.now().toString() + Math.random().toString(36);
+
+        let found = false;
 
         // 重複応答を受信するリスナー
         const duplicateListener = (event: MessageEvent) => {
             if (event.data && typeof event.data === "object") {
                 const { type, requestId: responseRequestId } = event.data as MessageData;
                 if (type === "found-duplicate" && responseRequestId === requestId) {
+                    found = true;
                     resolve(true);
                 }
             }
@@ -149,16 +152,23 @@ async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
         channel!.addEventListener("message", duplicateListener);
 
         // 他タブに重複チェックを要求
-        channel!.postMessage({
-            type: "check-duplicate",
-            tabId: tabId,
-            requestId: requestId
-        });
-
         setTimeout(() => {
             channel!.removeEventListener("message", duplicateListener);
-            resolve(false);
+            resolve(found);
         }, option.channelTimeout);
+
+        for (let i = 0; i < 2; i++) {
+            channel!.postMessage({
+                type: "check-duplicate",
+                tabId: tabId,
+                requestId: requestId
+            });
+            await new Promise(r => setTimeout(r, 100));
+            if (found) {
+                break;
+            }
+        }
+
     });
 }
 
