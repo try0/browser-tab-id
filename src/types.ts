@@ -8,16 +8,30 @@ export interface BrowserTabIdOption {
      * @default 'tabId'
      */
     tabIdStorageKey: string;
-
     /**
-     * タブIDの生成に使うランダムな文字列の長さ
+     * タブIDの生成に使うランダム数値の桁数
      */
     randomDigitsSize: number;
-
+    /**
+     * BroadcastChannelの名前
+     */
+    channelName: string;
     /**
      * BroadcastChannelのタイムアウト時間
      */
     channelTimeout: number;
+    /**
+     * IndexedDBを使用するかどうか
+     */
+    useIndexedDB: boolean;
+    /**
+     * IndexedDBの名前
+     */
+    indexedDBName: string;
+    /**
+     * リングカウンターの上限サイズ
+     */
+    cycleCounterSize: number;
 }
 
 /**
