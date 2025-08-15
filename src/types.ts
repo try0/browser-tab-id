@@ -42,13 +42,14 @@ export interface InitializeBrowserTabIdOption extends Partial<BrowserTabIdOption
 /**
  * 通知タイプ
  */
-export type MessageDataType = 'notify-generated-id' | 'request-generated-id';
+export type MessageDataType = 'check-duplicate' | `found-duplicate`;
 
 /**
  * 通知データ
  */
 export interface MessageData {
     type: MessageDataType;
+    requestId: string;
     tabId: string | null;
 };
 

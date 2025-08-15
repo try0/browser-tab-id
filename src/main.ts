@@ -24,10 +24,6 @@ let option: BrowserTabIdOption = {
 };
 
 
-// 他タブで生成されたIDを保持
-const generatedOtherTabIds: Set<string> = new Set();
-
-
 // iOSだとバックグラウンドタブとの通信うまくいかないかも
 let channel: BroadcastChannel | null = null;
 
@@ -43,17 +39,18 @@ function initializeChannel() {
     channel = new BroadcastChannel(option.channelName);
     channel.addEventListener("message", (event) => {
         if (event.data && typeof event.data === "object") {
-            const { type, tabId } = event.data as MessageData;
-            if (type === "notify-generated-id") {
-                // 他タブで生成されたIDを保持
-                if (tabId) {
-                    generatedOtherTabIds.add(tabId);
+            const { type, tabId, requestId } = event.data as MessageData;
+            if (type === "check-duplicate") {
+                // 他タブから重複チェック要求を受信
+                const myTabId = getTabId();
+                if (myTabId && myTabId === tabId) {
+                    // 重複が発見された場合のみ応答
+                    channel!.postMessage({
+                        type: "found-duplicate",
+                        tabId: myTabId,
+                        requestId: requestId
+                    });
                 }
-            }
-
-            if (type === "request-generated-id") {
-                // 生成されたIDを要求
-                channel!.postMessage({ type: "notify-generated-id", tabId: getTabId() });
             }
         }
     });
@@ -89,19 +86,14 @@ async function generateTabId(): Promise<string> {
         cycleNumber = "0";
     }
 
-    let id: string;
-    do {
-        const random = generateRandomNumber();
-        id = timestamp;
-        if (option.randomDigits > 0) {
-            id += `_${random}`;
-        }
-        if (option.cycleCounterDigits > 0) {
-            id += `_${cycleNumber.padStart(option.cycleCounterDigits, '0')}`;
-        }
-
-        // 念のため同一オリジンの他タブIDとの重複チェック
-    } while (generatedOtherTabIds.has(id));
+    const random = generateRandomNumber();
+    let id = timestamp;
+    if (option.randomDigits > 0) {
+        id += `_${random}`;
+    }
+    if (option.cycleCounterDigits > 0) {
+        id += `_${cycleNumber.padStart(option.cycleCounterDigits, '0')}`;
+    }
 
     return id;
 };
@@ -126,25 +118,48 @@ function generateRandomNumber(): string {
 }
 
 /**
- * 生成したIDを他タブへ通知します。
- * 
- * @param tabId 
- */
-function notifyGeneratedId(tabId: string): void {
-    if (!channel) {
-        initializeChannel();
-    }
-    channel!.postMessage({ type: "notify-generated-id", tabId: tabId });
-}
-
-/**
  * セッションストレージへタブIDをセットします。
  * 
  * @param tabId 
  */
 function setTabId(tabId: string): void {
     window.sessionStorage.setItem(option.tabIdStorageKey, tabId);
-    notifyGeneratedId(tabId);
+}
+
+/**
+ * 他タブとの重複をチェックします
+ * 
+ * @param tabId チェックするタブID
+ * @returns 重複がある場合true
+ */
+async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const requestId = Date.now().toString() + Math.random().toString(36);
+
+        // 重複応答を受信するリスナー
+        const duplicateListener = (event: MessageEvent) => {
+            if (event.data && typeof event.data === "object") {
+                const { type, requestId: responseRequestId } = event.data as MessageData;
+                if (type === "found-duplicate" && responseRequestId === requestId) {
+                    resolve(true);
+                }
+            }
+        };
+
+        channel!.addEventListener("message", duplicateListener);
+
+        // 他タブに重複チェックを要求
+        channel!.postMessage({
+            type: "check-duplicate",
+            tabId: tabId,
+            requestId: requestId
+        });
+
+        setTimeout(() => {
+            channel!.removeEventListener("message", duplicateListener);
+            resolve(false);
+        }, option.channelTimeout);
+    });
 }
 
 /**
@@ -176,7 +191,7 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
         state = "new-id";
         tabId = await generateTabId();
         setTabId(tabId);
-        return Promise.resolve(tabId);
+        return tabId;
     }
 
 
@@ -191,7 +206,7 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
                     state = "new-id"
                     tabId = await generateTabId();
                     setTabId(tabId);
-                    return Promise.resolve(tabId);
+                    return tabId;
                 }
             }
         } catch (ignore) {
@@ -201,24 +216,19 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
 
     // ページのリロードやタブを複製した場合、openerがないので収集
     checkLevel = "broadcast-channel";
-    return new Promise((resolve) => {
-        // 再度同一オリジンの別タブへIDを要求
-        channel!.postMessage({ type: 'request-generated-id' });
-        setTimeout(async () => {
-            // タイムアウト後にチェック
-            if (tabId && !generatedOtherTabIds.has(tabId)) {
-                // 重複なし
-                state = "session-storage-id";
-                resolve(tabId)
-            } else {
-                // 別タブと重複
-                state = "new-id";
-                tabId = await generateTabId();
-                setTabId(tabId);
-                resolve(tabId);
-            }
+    // 他タブとの重複チェック
+    const isDuplicate = await checkDuplicateWithOtherTabs(tabId);
 
-        }, option.channelTimeout);
-    });
+    if (!isDuplicate) {
+        // 重複なし
+        state = "session-storage-id";
+        return tabId;
+    } else {
+        // 別タブと重複
+        state = "new-id";
+        tabId = await generateTabId();
+        setTabId(tabId);
+        return tabId;
+    }
 }
 
