@@ -26,14 +26,14 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Pages
         uses: actions/configure-pages@v2
-      - name: Use Node.js 18
+      - name: Use Node.js 20
         uses: actions/setup-node@v2
         with:
-          node-version: 18
+          node-version: 20
       - name: Install dependencies
         run: npm install
         working-directory: ./
-      - name: Build SvelteKit
+      - name: Build Sample
         run: npm run build
         working-directory: ./
       - name: Upload artifact
