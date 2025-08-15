@@ -1,11 +1,19 @@
 import type { BrowserTabIdOption } from "./types";
 
-// 共通定数
+/**
+ * オブジェクトストア名
+ */
 const OBJECT_STORE_NAME = "ids";
+/**
+ * データベースバージョン
+ */
 const DB_VERSION = 1;
 
 /**
- * IndexedDBを開く共通関数
+ * IndexedDBを開きます。
+ * 
+ * @param option 
+ * @returns 
  */
 function openDatabase(option: BrowserTabIdOption): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -24,7 +32,11 @@ function openDatabase(option: BrowserTabIdOption): Promise<IDBDatabase> {
 }
 
 /**
- * トランザクションとオブジェクトストアを取得する共通関数
+ * トランザクションとオブジェクトストアを取得します。
+ * 
+ * @param db 
+ * @param mode 
+ * @returns 
  */
 function getObjectStore(db: IDBDatabase, mode: IDBTransactionMode = "readonly"): IDBObjectStore {
     const transaction = db.transaction(OBJECT_STORE_NAME, mode);
@@ -33,6 +45,10 @@ function getObjectStore(db: IDBDatabase, mode: IDBTransactionMode = "readonly"):
 
 /**
  * IndexedDBからユニークな数字を生成します。
+ * option.cycleCounterDigits桁数のリングカウンターです。
+ * 
+ * @param option 
+ * @returns 
  */
 export async function incrementCycleCounter(option: BrowserTabIdOption): Promise<number> {
     const maxCount = Math.min(10000000, Math.pow(10, option.cycleCounterDigits));
@@ -72,7 +88,10 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
 }
 
 /**
- * IndexedDBを非同期でクリアします
+ * IndexedDBを非同期でクリアします。
+ * 
+ * @param option 
+ * @returns 
  */
 async function clearIndexedDB(option: BrowserTabIdOption): Promise<void> {
     try {
