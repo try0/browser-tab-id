@@ -15,9 +15,9 @@ export let checkLevel: CheckLevel = "no-check";
  */
 let option: BrowserTabIdOption = {
     tabIdStorageKey: "btid",
-    randomDigits: 4,
+    randomDigits: 8,
     channelName: "btid_channel",
-    channelTimeout: 250,
+    channelTimeout: 500,
     useIndexedDB: true,
     indexedDBName: "btid_db",
     cycleCounterDigits: 4,
@@ -114,7 +114,15 @@ async function generateTabId(): Promise<string> {
  */
 function generateRandomNumber(): string {
     const max = Math.pow(10, option.randomDigits);
-    return Math.floor(Math.random() * max).toString().padStart(option.randomDigits, '0');
+    try {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        const randomValue = array[0] % max;
+
+        return randomValue.toString().padStart(option.randomDigits, '0');
+    } catch (e) {
+        return Math.floor(Math.random() * max).toString().padStart(option.randomDigits, '0');
+    }
 }
 
 /**
@@ -159,7 +167,6 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
     option = { ...option, ...initOption };
 
     initializeChannel();
-    channel!.postMessage({ type: 'request-generated-id' });
 
     // タブIDがすでに存在するか確認
     checkLevel = "session-storage";
