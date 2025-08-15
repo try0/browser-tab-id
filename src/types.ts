@@ -36,6 +36,8 @@ export interface BrowserTabIdOption {
      * リングカウンターの桁数
      */
     cycleCounterDigits: number;
+
+    debugLog: boolean;
 }
 
 /**

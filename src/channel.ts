@@ -1,4 +1,7 @@
+
 import type { MessageData, Transport } from "./types";
+import { createLogger } from "./log";
+const logger = createLogger();
 
 /**
  * BroadcastChannel トランスポート実装
@@ -130,7 +133,7 @@ export class TransportRacer {
         this.transports = transports;
 
         if (transports.length === 0) {
-            console.warn("No available transports");
+            logger.warn(`No available transports`);
         }
 
         // 各トランスポートからのメッセージを統一的に処理
@@ -151,7 +154,7 @@ export class TransportRacer {
             try {
                 transport.send(message);
             } catch (error) {
-                console.warn(`Failed to send message via ${transport.name}:`, error);
+                logger.warn(`Failed to send message via ${transport.name}:`, error);
             }
         });
     }
@@ -178,7 +181,7 @@ export class TransportRacer {
             try {
                 transport.cleanup();
             } catch (error) {
-                console.warn(`Failed to cleanup ${transport.name}:`, error);
+                logger.warn(`Failed to cleanup ${transport.name}:`, error);
             }
         });
         this.messageCallbacks.clear();

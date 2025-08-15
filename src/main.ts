@@ -1,6 +1,8 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./indexeddb";
 import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, MessageData } from "./types";
+import { createLogger } from "./log";
+const logger = createLogger();
 
 /**
  * 生成状況
@@ -23,6 +25,7 @@ let option: BrowserTabIdOption = {
     useIndexedDB: true,
     indexedDBName: "btid_db",
     cycleCounterDigits: 4,
+    debugLog: false
 };
 
 
@@ -43,7 +46,9 @@ async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
         const resolveOnce = (found: boolean, transportName: string) => {
             if (!resolved) {
                 resolved = true;
-                console.log(`Duplicate check resolved by ${transportName}: found=${found}, responses=${responseCount}`);
+                if (option.debugLog) {
+                    logger.debug(`Duplicate check resolved by ${transportName}: found=${found}, responses=${responseCount}`);
+                }
                 resolve(found);
             }
         };
@@ -101,7 +106,7 @@ function initializeTransports() {
     try {
         transports.push(new BroadcastChannelTransport(option.channelName));
     } catch (error) {
-        console.warn("BroadcastChannel not available:", error);
+        logger.warn(`BroadcastChannel not available:`, error);
     }
 
     // localStorage トランスポートを追加
@@ -109,7 +114,7 @@ function initializeTransports() {
         try {
             transports.push(new LocalStorageTransport("btid_msg"));
         } catch (error) {
-            console.warn("localStorage transport not available:", error);
+            logger.warn(`localStorage transport not available:`, error);
         }
     }
 
@@ -122,7 +127,9 @@ function initializeTransports() {
         }
     });
 
-    console.log("Initialized transports:", transportRacer.getTransportNames());
+    if (option.debugLog) {
+        logger.debug(`Initialized transports:`, transportRacer.getTransportNames());
+    }
 
     window.addEventListener("beforeunload", () => {
         transportRacer?.cleanup();
@@ -163,7 +170,7 @@ async function generateTabId(): Promise<string> {
             cycleNumber = await incrementCycleCounter(option);
         }
     } catch (e) {
-        console.warn("IndexedDB increment failed, using fallback:", e);
+        logger.warn(`IndexedDB increment failed, using fallback:`, e);
         cycleNumber = 0;
     }
 
@@ -227,6 +234,11 @@ export function getTabId(): string {
 export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
     option = { ...option, ...initOption };
+
+    if (option.debugLog) {
+        logger.debug("Initializing with options:", option);
+    }
+
     // 設定値の検証
     if (option.randomDigits < 0 || option.randomDigits > 10) {
         throw new Error("randomDigits must be between 0 and 10");

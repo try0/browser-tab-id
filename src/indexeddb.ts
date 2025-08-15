@@ -1,4 +1,6 @@
 import type { BrowserTabIdOption } from "./types";
+import { createLogger } from "./log";
+const logger = createLogger();
 
 /**
  * オブジェクトストア名
@@ -73,6 +75,10 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
                     }, 0);
                 }
 
+                if (option.debugLog) {
+                    logger.debug(`Generated unique ID:`, modAutoId);
+                }
+
                 resolve(modAutoId);
                 db.close();
             };
@@ -112,7 +118,7 @@ async function clearIndexedDB(option: BrowserTabIdOption): Promise<void> {
             };
         });
     } catch (error) {
-        console.warn("Failed to clear IndexedDB:", error);
+        logger.warn(`Failed to clear IndexedDB:`, error);
         throw error;
     }
 }
