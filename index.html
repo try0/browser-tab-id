@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+    <script type="module" src="/src/main.ts"></script>
+    <script type="module">
+        import { initialize, state, checkLevel } from '/src/main.ts';
+        document.addEventListener('DOMContentLoaded', () => {
+
+            initialize().then(tabId => {
+                document.querySelector('#tab-id').textContent = tabId;
+                console.log(tabId);
+
+                document.querySelector('#state').textContent 
+                = `State: ${state}, Check Level: ${checkLevel}`;
+            });
+
+            document.querySelector('#linkOpener').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open('./index.html', '_blank');
+            });
+
+            document.querySelector('#linkNoOpener').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open('./index.html', '_blank', 'noopener');
+            });
+        });
+    </script>
+
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Browser Tab Id</h1>
+        <div>
+            <p>時間＋ランダム数字のIDを生成し、sessionStorageで管理します。</p>
+        </div>
+
+        <h2 id="tab-id"></h2>
+        <div id="state">          
+        </div>
+
+        <div style="padding:0.5rem;">
+            <a href="./index.html" target="_blank">新しいタブで開く</a>
+        </div>
+        <div style="padding:0.5rem;">
+            <a href="#" id="linkOpener">新しいタブで開く (opener)</a>
+        </div>
+        <div style="padding:0.5rem;">
+            <a href="#" id="linkNoOpener">新しいタブで開く (noopener)</a>
+        </div>
+    </div>
+
+</body>
+
+</html>
