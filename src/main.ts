@@ -194,7 +194,7 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
     checkLevel = "broadcast-channel";
     return new Promise((resolve) => {
         // 再度同一オリジンの別タブへIDを要求
-        channel.postMessage({ type: 'request-generated-id' });
+        channel!.postMessage({ type: 'request-generated-id' });
         setTimeout(async () => {
             // タイムアウト後にチェック
             if (tabId && !generatedOtherTabIds.has(tabId)) {
