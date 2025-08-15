@@ -7,29 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
     <script type="module" src="/src/main.ts"></script>
-    <script type="module">
-        import { initialize, state, checkLevel } from '/src/main.ts';
-        document.addEventListener('DOMContentLoaded', () => {
-
-            initialize().then(tabId => {
-                document.querySelector('#tab-id').textContent = tabId;
-                console.log(tabId);
-
-                document.querySelector('#state').textContent 
-                = `State: ${state}, Check Level: ${checkLevel}`;
-            });
-
-            document.querySelector('#linkOpener').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.open('./index.html', '_blank');
-            });
-
-            document.querySelector('#linkNoOpener').addEventListener('click', (e) => {
-                e.preventDefault();
-                window.open('./index.html', '_blank', 'noopener');
-            });
-        });
-    </script>
+    <script type="module" src="./index.ts"></script>
 
     <style>
         .container {
