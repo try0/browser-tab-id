@@ -11,7 +11,7 @@ export interface BrowserTabIdOption {
     /**
      * タブIDの生成に使うランダム数値の桁数
      */
-    randomDigitsSize: number;
+    randomDigits: number;
     /**
      * BroadcastChannelの名前
      */
@@ -29,9 +29,9 @@ export interface BrowserTabIdOption {
      */
     indexedDBName: string;
     /**
-     * リングカウンターの上限サイズ
+     * リングカウンターの桁数
      */
-    cycleCounterSize: number;
+    cycleCounterDigits: number;
 }
 
 /**

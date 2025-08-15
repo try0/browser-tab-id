@@ -1,3 +1,4 @@
+import { incrementCycleCounter } from "./indexeddb";
 import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, MessageData } from "./types";
 
 /**
@@ -14,12 +15,12 @@ export let checkLevel: CheckLevel = "no-check";
  */
 let option: BrowserTabIdOption = {
     tabIdStorageKey: "btid",
-    randomDigitsSize: 5,
+    randomDigits: 4,
     channelName: "btid_channel",
-    channelTimeout: 200,
+    channelTimeout: 250,
     useIndexedDB: true,
     indexedDBName: "btid_db",
-    cycleCounterSize: 2000,
+    cycleCounterDigits: 4,
 };
 
 
@@ -28,7 +29,7 @@ const generatedOtherTabIds: Set<string> = new Set();
 
 
 // iOSだとバックグラウンドタブとの通信うまくいかないかも
-let channel: BroadcastChannel;
+let channel: BroadcastChannel | null = null;
 
 /**
  * BroadcastChannelを初期化します。
@@ -36,6 +37,8 @@ let channel: BroadcastChannel;
 function initializeChannel() {
     if (channel) {
         channel.close();
+        channel = null;
+        window.removeEventListener("beforeunload", closeChannel);
     }
     channel = new BroadcastChannel(option.channelName);
     channel.addEventListener("message", (event) => {
@@ -50,12 +53,22 @@ function initializeChannel() {
 
             if (type === "request-generated-id") {
                 // 生成されたIDを要求
-                channel.postMessage({ type: "notify-generated-id", tabId: getTabId() });
+                channel!.postMessage({ type: "notify-generated-id", tabId: getTabId() });
             }
         }
     });
+    window.addEventListener("beforeunload", closeChannel);
 }
 
+/**
+ * BroadcastChannelを閉じます。
+ */
+function closeChannel() {
+    if (channel) {
+        channel.close();
+        channel = null;
+    }
+}
 
 
 /**
@@ -66,23 +79,29 @@ function initializeChannel() {
 async function generateTabId(): Promise<string> {
     // 時間ベースとランダム数値を組み合わせて生成
     const timestamp = Date.now().toString();
-    let random = generateRandomNumber();
     let cycleNumber: string = "0";
     try {
         if (option.useIndexedDB) {
             // autoincrementを使用してユニークな数字を生成
-            cycleNumber = await incrementCycleCounter();
+            cycleNumber = await incrementCycleCounter(option);
         }
     } catch (e) {
         cycleNumber = "0";
     }
-    let id = `${timestamp}_${random}_${cycleNumber.padStart(4, '0')}`;
 
-    // 念のため同一オリジンの他タブIDとの重複チェック
-    while (generatedOtherTabIds.has(id)) {
-        random = generateRandomNumber();
-        id = `${timestamp}_${random}_${cycleNumber.padStart(4, '0')}`;
-    }
+    let id: string;
+    do {
+        const random = generateRandomNumber();
+        id = timestamp;
+        if (option.randomDigits > 0) {
+            id += `_${random}`;
+        }
+        if (option.cycleCounterDigits > 0) {
+            id += `_${cycleNumber.padStart(option.cycleCounterDigits, '0')}`;
+        }
+
+        // 念のため同一オリジンの他タブIDとの重複チェック
+    } while (generatedOtherTabIds.has(id));
 
     return id;
 };
@@ -94,117 +113,8 @@ async function generateTabId(): Promise<string> {
  * @returns 
  */
 function generateRandomNumber(): string {
-    const max = Math.pow(10, option.randomDigitsSize);
-    return Math.floor(Math.random() * max).toString().padStart(option.randomDigitsSize, '0');
-}
-
-/**
- * IndexedDBからユニークな数字を生成します。
- * 
- * @returns 
- */
-async function incrementCycleCounter(): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(option.indexedDBName, 1);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains("ids")) {
-                db.createObjectStore("ids", { keyPath: "id", autoIncrement: true });
-            }
-        };
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-            const db = request.result;
-            const tx = db.transaction("ids", "readwrite");
-            const store = tx.objectStore("ids");
-            // 空データを追加してautoIncrement値を得る
-            const addReq = store.add({});
-            addReq.onsuccess = () => {
-                // addReq.resultがautoIncrementされた数値
-                const autoId = addReq.result as number;
-
-                // 一定件数ごとにクリア
-                let modAutoId = autoId % option.cycleCounterSize;
-                if (modAutoId === 0) {
-                    if (Math.min(option.cycleCounterSize * 100, 10000000) > autoId) {
-                        // autoIncrementが大きくなりすぎないようにクリア
-                        setTimeout(() => {
-                            resetAutoIncrement();
-                        }, 0);
-                    } else {
-                        // データベースが大きくなりすぎた場合はクリア
-                        setTimeout(() => {
-                            clearIndexedDB();
-                        }, 0);
-                    }
-                }
-
-                resolve(modAutoId.toString());
-                db.close();
-            };
-            addReq.onerror = () => {
-                reject(addReq.error);
-                db.close();
-            };
-        };
-    });
-}
-
-/**
- * IndexedDBを非同期でクリアします
- */
-async function clearIndexedDB(): Promise<void> {
-    try {
-        const request = indexedDB.open(option.indexedDBName, 1);
-        return new Promise((resolve, reject) => {
-            request.onsuccess = () => {
-                const db = request.result;
-                const tx = db.transaction("ids", "readwrite");
-                const store = tx.objectStore("ids");
-
-                const clearReq = store.clear();
-                clearReq.onsuccess = () => {
-                    db.close();
-                    resolve();
-                };
-                clearReq.onerror = () => {
-                    db.close();
-                    reject(clearReq.error);
-                };
-            };
-            request.onerror = () => reject(request.error);
-        });
-    } catch (error) {
-        console.warn("Failed to clear IndexedDB:", error);
-    }
-}
-
-async function resetAutoIncrement(): Promise<void> {
-    return new Promise((resolve, reject) => {
-        // 既存のデータベースを削除
-        const deleteReq = indexedDB.deleteDatabase(option.indexedDBName);
-
-        deleteReq.onsuccess = () => {
-            // 新しいデータベースを作成（autoIncrementは1から開始）
-            const openReq = indexedDB.open(option.indexedDBName, 1);
-
-            openReq.onupgradeneeded = () => {
-                const db = openReq.result;
-                if (!db.objectStoreNames.contains("ids")) {
-                    db.createObjectStore("ids", { keyPath: "id", autoIncrement: true });
-                }
-            };
-
-            openReq.onsuccess = () => {
-                openReq.result.close();
-                resolve();
-            };
-
-            openReq.onerror = () => reject(openReq.error);
-        };
-
-        deleteReq.onerror = () => reject(deleteReq.error);
-    });
+    const max = Math.pow(10, option.randomDigits);
+    return Math.floor(Math.random() * max).toString().padStart(option.randomDigits, '0');
 }
 
 /**
@@ -213,7 +123,10 @@ async function resetAutoIncrement(): Promise<void> {
  * @param tabId 
  */
 function notifyGeneratedId(tabId: string): void {
-    channel.postMessage({ type: "notify-generated-id", tabId: tabId });
+    if (!channel) {
+        initializeChannel();
+    }
+    channel!.postMessage({ type: "notify-generated-id", tabId: tabId });
 }
 
 /**
@@ -244,10 +157,6 @@ export function getTabId(): string {
 export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string | null> {
     // 設定初期化
     option = { ...option, ...initOption };
-    if (option.cycleCounterSize > 9999) {
-        option.cycleCounterSize = 9999;
-        console.log("cycleCounterSize is too large, set to 9999");
-    }
     initializeChannel();
 
     // タブIDがすでに存在するか確認
@@ -303,3 +212,4 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
         }, option.channelTimeout);
     });
 }
+
