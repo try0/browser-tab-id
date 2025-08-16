@@ -20,12 +20,12 @@ let option: InternalBrowserTabIdOption = {
     tabIdKey: "btid",
     randomDigits: 8,
     channelTimeout: 600,
-    enableLocalStorageTransport: true,
     cycleCounterDigits: 4,
     debugLog: false,
     channelName: "btid_channel",
     storeName: "btid_db",
-    cycleCounterType: "indexedDB"
+    cycleCounterType: "indexed-db",
+    channels: ['broadcast-channel', 'local-storage'],
 };
 
 
@@ -110,7 +110,7 @@ function initializeTransports() {
     }
 
     // localStorage トランスポートを追加
-    if (option.enableLocalStorageTransport) {
+    if (option.channels.includes("local-storage") || transports.length === 0) {
         try {
             transports.push(new LocalStorageTransport(option.channelName));
         } catch (error) {

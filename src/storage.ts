@@ -1,4 +1,4 @@
-import type { BrowserTabIdOption, InternalBrowserTabIdOption } from "./types";
+import type { InternalBrowserTabIdOption } from "./types";
 import { createLogger } from "./log";
 import { LockManagerFactory } from "./lock";
 const logger = createLogger();
@@ -197,7 +197,7 @@ class LocalStorageRingCounter implements IRingCounter {
  */
 class RingCounterFactory {
     static createRingCounter(option: InternalBrowserTabIdOption): IRingCounter {
-        if (option.cycleCounterType === 'indexedDB') {
+        if (option.cycleCounterType === 'indexed-db') {
             try {
                 if (typeof indexedDB !== 'undefined') {
                     return new IndexedDBRingCounter(option);

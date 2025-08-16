@@ -5,7 +5,6 @@
 export interface BrowserTabIdOption {
     /**
      * タブIDのキー
-     * @default 'tabId'
      */
     tabIdKey: string;
     /**
@@ -19,7 +18,7 @@ export interface BrowserTabIdOption {
     /**
      * ブラウザのローカルストレージを使用するかどうか
      */
-    enableLocalStorageTransport: boolean;
+    channels: ("broadcast-channel" | "local-storage")[];
     /**
      * リングカウンターの桁数
      */
@@ -27,7 +26,7 @@ export interface BrowserTabIdOption {
     /**
      * リングカウンター実装
      */
-    cycleCounterType: 'localStorage' | 'indexedDB';
+    cycleCounterType: 'local-storage' | 'indexed-db';
     debugLog: boolean;
 }
 
