@@ -141,7 +141,7 @@ function initializeTransports() {
  */
 function handleDuplicateCheckMessage(message: MessageData, transportName: string) {
     const { tabId, requestId } = message;
-    const myTabId = getTabId();
+    const myTabId = get();
 
     if (myTabId && myTabId === tabId) {
         const response: MessageData = {
@@ -241,7 +241,7 @@ function fixOption() {
  * 
  * @returns 
  */
-export function getTabId(): string {
+export function get(): string {
     return window.sessionStorage.getItem(option.tabIdKey) || '';
 }
 

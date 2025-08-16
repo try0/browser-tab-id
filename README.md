@@ -11,3 +11,6 @@ BroadcastChannelとlocalStorageで重複チェック　別タブと被ってい�
 ↓  
 sessionStorageの値をそのまま使用  
 
+```
+const tabId = await BrowserTabId.initialize();
+```
