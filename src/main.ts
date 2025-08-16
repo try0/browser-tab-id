@@ -19,7 +19,7 @@ export let checkLevel: CheckLevel = "no-check";
 let option: InternalBrowserTabIdOption = {
     tabIdKey: "btid",
     randomDigits: 8,
-    channelTimeout: 600,
+    duplicateCheckWaitTime: 600,
     cycleCounterDigits: 4,
     debugLog: false,
     channelName: "btid_channel",
@@ -88,7 +88,7 @@ async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
         setTimeout(() => {
             transportRacer!.offMessage(messageHandler);
             resolveOnce(duplicateFound, "timeout");
-        }, option.channelTimeout);
+        }, option.duplicateCheckWaitTime);
     });
 }
 

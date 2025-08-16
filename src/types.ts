@@ -12,9 +12,9 @@ export interface BrowserTabIdOption {
      */
     randomDigits: number;
     /**
-     * BroadcastChannelのタイムアウト時間
+     * BroadcastChannelの重複チェック待機時間
      */
-    channelTimeout: number;
+    duplicateCheckWaitTime: number;
     /**
      * ブラウザのローカルストレージを使用するかどうか
      */
