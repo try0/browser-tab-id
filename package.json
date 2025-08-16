@@ -10,6 +10,7 @@
         "preview": "vite preview"
     },
     "devDependencies": {
+        "@playwright/test": "^1.54.2",
         "cross-env": "^10.0.0",
         "typescript": "~5.8.3",
         "vite": "^7.1.2"
