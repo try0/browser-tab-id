@@ -99,3 +99,28 @@ export type CheckLevel =
     "opener-session-storage" |
     "broadcast-channel";
 
+
+
+/**
+ * ロック管理のインターフェース
+ */
+export interface ILockManager {
+    /**
+     * 排他ロックを取得して処理を実行します。
+     * 
+     * @param lockName ロック名
+     * @param callback ロック取得後に実行する処理
+     * @param options ロックオプション
+     */
+    withLock<T>(lockName: string, callback: () => Promise<T>, options?: LockOption): Promise<T>;
+    
+    /**
+     * ロックマネージャーをクリーンアップ
+     */
+    cleanup(): void;
+}
+
+export interface LockOption {
+    timeout?: number;
+    mode?: 'exclusive' | 'shared';
+}

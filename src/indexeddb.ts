@@ -1,5 +1,6 @@
 import type { BrowserTabIdOption } from "./types";
 import { createLogger } from "./log";
+import { LockManagerFactory } from "./lock";
 const logger = createLogger();
 
 /**
@@ -20,14 +21,14 @@ const DB_VERSION = 1;
 function openDatabase(option: BrowserTabIdOption): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(option.indexedDBName, DB_VERSION);
-        
+
         request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
                 db.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id", autoIncrement: true });
             }
         };
-        
+
         request.onerror = () => reject(request.error);
         request.onsuccess = () => resolve(request.result);
     });
@@ -54,43 +55,52 @@ function getObjectStore(db: IDBDatabase, mode: IDBTransactionMode = "readonly"):
  */
 export async function incrementCycleCounter(option: BrowserTabIdOption): Promise<number> {
     const maxCount = Math.min(10000000, Math.pow(10, option.cycleCounterDigits));
+    const lockName = `btid_counter_${option.indexedDBName}`;
+    const lockManager = LockManagerFactory.getInstance();
 
-    return new Promise(async (resolve, reject) => {
-        try {
-            const db = await openDatabase(option);
-            const store = getObjectStore(db, "readwrite");
-            
-            // 空データを追加してautoIncrement値を得る
-            const addReq = store.add({});
-            
-            addReq.onsuccess = () => {
-                // addReq.resultがautoIncrementされた数値
-                const autoId = addReq.result as number;
+    return lockManager.withLock(lockName, async () => {
 
-                // 一定件数ごとにクリア
-                let modAutoId = autoId % maxCount;
-                if (modAutoId === 0) {
-                    setTimeout(() => {
-                        clearIndexedDB(option);
-                    }, 0);
-                }
 
-                if (option.debugLog) {
-                    logger.debug(`Generated unique ID:`, modAutoId);
-                }
+        return new Promise<number>(async (resolve, reject) => {
+            try {
+                const db = await openDatabase(option);
+                const store = getObjectStore(db, "readwrite");
 
-                resolve(modAutoId);
-                db.close();
-            };
-            
-            addReq.onerror = () => {
-                reject(addReq.error);
-                db.close();
-            };
-        } catch (error) {
-            reject(error);
-        }
-    });
+                // 空データを追加してautoIncrement値を得る
+                const addReq = store.add({
+                    timestamp: Date.now(),
+                    lockAcquired: true
+                });
+
+                addReq.onsuccess = () => {
+                    // addReq.resultがautoIncrementされた数値
+                    const autoId = addReq.result as number;
+
+                    // 一定件数ごとにクリア
+                    let modAutoId = autoId % maxCount;
+                    if (modAutoId === 0) {
+                        setTimeout(() => {
+                            clearIndexedDB(option);
+                        }, 0);
+                    }
+
+                    if (option.debugLog) {
+                        logger.debug(`Generated unique ID: ${modAutoId} (raw: ${autoId})`);
+                    }
+
+                    resolve(modAutoId);
+                    db.close();
+                };
+
+                addReq.onerror = () => {
+                    reject(addReq.error);
+                    db.close();
+                };
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }, { timeout: 10000 });
 }
 
 /**
@@ -100,25 +110,33 @@ export async function incrementCycleCounter(option: BrowserTabIdOption): Promise
  * @returns 
  */
 async function clearIndexedDB(option: BrowserTabIdOption): Promise<void> {
-    try {
-        const db = await openDatabase(option);
-        const store = getObjectStore(db, "readwrite");
-        
-        return new Promise((resolve, reject) => {
-            const clearReq = store.clear();
-            
-            clearReq.onsuccess = () => {
-                db.close();
-                resolve();
-            };
-            
-            clearReq.onerror = () => {
-                db.close();
-                reject(clearReq.error);
-            };
-        });
-    } catch (error) {
-        logger.warn(`Failed to clear IndexedDB:`, error);
-        throw error;
-    }
+    const lockName = `btid_clear_${option.indexedDBName}`;
+    const lockManager = LockManagerFactory.getInstance();
+
+    return lockManager.withLock(lockName, async () => {
+        try {
+            const db = await openDatabase(option);
+            const store = getObjectStore(db, "readwrite");
+
+            return new Promise<void>((resolve, reject) => {
+                const clearReq = store.clear();
+
+                clearReq.onsuccess = () => {
+                    if (option.debugLog) {
+                        logger.debug('IndexedDB cleared');
+                    }
+                    db.close();
+                    resolve();
+                };
+
+                clearReq.onerror = () => {
+                    db.close();
+                    reject(clearReq.error);
+                };
+            });
+        } catch (error) {
+            logger.warn(`Failed to clear IndexedDB:`, error);
+            throw error;
+        }
+    }, { timeout: 5000 });
 }
