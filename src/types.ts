@@ -7,15 +7,11 @@ export interface BrowserTabIdOption {
      * タブIDのキー
      * @default 'tabId'
      */
-    tabIdStorageKey: string;
+    tabIdKey: string;
     /**
      * タブIDの生成に使うランダム数値の桁数
      */
     randomDigits: number;
-    /**
-     * BroadcastChannelの名前
-     */
-    channelName: string;
     /**
      * BroadcastChannelのタイムアウト時間
      */
@@ -25,18 +21,13 @@ export interface BrowserTabIdOption {
      */
     enableLocalStorageTransport: boolean;
     /**
-     * IndexedDBを使用するかどうか
-     */
-    useIndexedDB: boolean;
-    /**
-     * IndexedDBの名前
-     */
-    indexedDBName: string;
-    /**
      * リングカウンターの桁数
      */
     cycleCounterDigits: number;
-
+    /**
+     * リングカウンター実装
+     */
+    cycleCounterType: 'localStorage' | 'indexedDB';
     debugLog: boolean;
 }
 
@@ -44,6 +35,11 @@ export interface BrowserTabIdOption {
  * 初期化オプション
  */
 export interface InitializeBrowserTabIdOption extends Partial<BrowserTabIdOption> { }
+
+export interface InternalBrowserTabIdOption extends BrowserTabIdOption {
+    channelName: string;
+    storeName: string;
+}
 
 /**
  * 通知タイプ
@@ -124,3 +120,4 @@ export interface LockOption {
     timeout?: number;
     mode?: 'exclusive' | 'shared';
 }
+

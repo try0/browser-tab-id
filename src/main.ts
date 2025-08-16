@@ -1,6 +1,6 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
-import { incrementCycleCounter } from "./indexeddb";
-import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, MessageData } from "./types";
+import { incrementCycleCounter } from "./storage";
+import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData } from "./types";
 import { createLogger } from "./log";
 const logger = createLogger();
 
@@ -16,16 +16,16 @@ export let checkLevel: CheckLevel = "no-check";
 /**
  * 設定
  */
-let option: BrowserTabIdOption = {
-    tabIdStorageKey: "btid",
+let option: InternalBrowserTabIdOption = {
+    tabIdKey: "btid",
     randomDigits: 8,
-    channelName: "btid_channel",
     channelTimeout: 600,
     enableLocalStorageTransport: true,
-    useIndexedDB: true,
-    indexedDBName: "btid_db",
     cycleCounterDigits: 4,
-    debugLog: false
+    debugLog: false,
+    channelName: "btid_channel",
+    storeName: "btid_db",
+    cycleCounterType: "indexedDB"
 };
 
 
@@ -112,7 +112,7 @@ function initializeTransports() {
     // localStorage トランスポートを追加
     if (option.enableLocalStorageTransport) {
         try {
-            transports.push(new LocalStorageTransport("btid_msg"));
+            transports.push(new LocalStorageTransport(option.channelName));
         } catch (error) {
             logger.warn(`localStorage transport not available:`, error);
         }
@@ -165,10 +165,8 @@ async function generateTabId(): Promise<string> {
     const timestamp = Date.now().toString();
     let cycleNumber: number = 0;
     try {
-        if (option.useIndexedDB) {
-            // autoincrementを使用してユニークな数字を生成
-            cycleNumber = await incrementCycleCounter(option);
-        }
+        // autoincrementを使用してユニークな数字を生成
+        cycleNumber = await incrementCycleCounter(option);
     } catch (e) {
         logger.warn(`IndexedDB increment failed, using fallback:`, e);
         cycleNumber = 0;
@@ -213,7 +211,29 @@ function generateRandomNumber(): string {
  * @param tabId 
  */
 function setTabId(tabId: string): void {
-    window.sessionStorage.setItem(option.tabIdStorageKey, tabId);
+    window.sessionStorage.setItem(option.tabIdKey, tabId);
+}
+
+function fixOption() {
+    // 設定値の検証
+    if (option.randomDigits < 0) {
+        logger.warn("Invalid randomDigits value:", option.randomDigits);
+        option.randomDigits = 0;
+    }
+    if (option.randomDigits > 10) {
+        logger.warn("randomDigits value too large, setting to 10:", option.randomDigits);
+        option.randomDigits = 10;
+    }
+    if (option.cycleCounterDigits < 0) {
+        logger.warn("Invalid cycleCounterDigits value:", option.cycleCounterDigits);
+        option.cycleCounterDigits = 0;
+    }
+    if (option.cycleCounterDigits > 10) {
+        logger.warn("cycleCounterDigits value too large, setting to 10:", option.cycleCounterDigits);
+        option.cycleCounterDigits = 10;
+    }
+    option.channelName = option.tabIdKey + "_channel";
+    option.storeName = option.tabIdKey + "_store";
 }
 
 /**
@@ -222,7 +242,7 @@ function setTabId(tabId: string): void {
  * @returns 
  */
 export function getTabId(): string {
-    return window.sessionStorage.getItem(option.tabIdStorageKey) || '';
+    return window.sessionStorage.getItem(option.tabIdKey) || '';
 }
 
 /**
@@ -234,24 +254,17 @@ export function getTabId(): string {
 export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
     option = { ...option, ...initOption };
+    fixOption();
 
     if (option.debugLog) {
         logger.debug("Initializing with options:", option);
-    }
-
-    // 設定値の検証
-    if (option.randomDigits < 0 || option.randomDigits > 10) {
-        throw new Error("randomDigits must be between 0 and 10");
-    }
-    if (option.cycleCounterDigits < 0 || option.cycleCounterDigits > 10) {
-        throw new Error("cycleCounterDigits must be between 0 and 10");
     }
 
     initializeTransports();
 
     // タブIDがすでに存在するか確認
     checkLevel = "session-storage";
-    let tabId: string | null = window.sessionStorage.getItem(option.tabIdStorageKey);
+    let tabId: string | null = window.sessionStorage.getItem(option.tabIdKey);
     if (!tabId) {
         // 保持していない場合生成
         state = "new-id";
@@ -265,7 +278,7 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
     if (window && window.opener && window.opener.sessionStorage) {
         // openerが存在する場合、直接取得を試みる
         try {
-            const fromTabId: string | null = window.opener.sessionStorage.getItem(option.tabIdStorageKey);
+            const fromTabId: string | null = window.opener.sessionStorage.getItem(option.tabIdKey);
             if (fromTabId) {
                 if (fromTabId === tabId) {
                     // sessionStorage内のデータが複製されているため生成
