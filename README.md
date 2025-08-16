@@ -4,6 +4,7 @@
 1755313540998_87226662_0001
 ```
 
+[サンプル](https://try0.github.io/browser-tab-id/index.html)
 
 * インクリメント部は、[Web Locks API](https://developer.mozilla.org/ja/docs/Web/API/Web_Locks_API)が使える環境であれば、ロックを取得してインクリメント。
 * window.openerがあれば、sessionStorageを直接確認。
