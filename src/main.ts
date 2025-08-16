@@ -1,6 +1,6 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./storage";
-import type { CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData } from "./types";
+import type { CheckLevel, GeneratedState, IdSource, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdSource, TabIdStringSource } from "./types";
 import { createLogger } from "./log";
 const logger = createLogger();
 
@@ -161,8 +161,16 @@ function handleDuplicateCheckMessage(message: MessageData, transportName: string
  * @returns タブID
  */
 async function generateTabId(): Promise<string> {
+    const idSource: TabIdStringSource = {
+        timestamp: "",
+        random: "",
+        cycle: ""
+    };
+
+
     // 時間ベースとランダム数値を組み合わせて生成
-    const timestamp = Date.now().toString();
+    idSource.timestamp = Date.now().toString();
+
     let cycleNumber: number = 0;
     try {
         // autoincrementを使用してユニークな数字を生成
@@ -172,19 +180,32 @@ async function generateTabId(): Promise<string> {
         cycleNumber = 0;
     }
 
-    const random = generateRandomNumber();
-    let id = timestamp;
     if (option.randomDigits > 0) {
         // ランダム部あり
-        id += `_${random}`;
-    }
-    if (option.cycleCounterDigits > 0) {
-        // リングカウンター部あり
-        id += `_${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
+        const random = generateRandomNumber();
+        idSource.random = `${random}`;
     }
 
-    if (option.prefixFactory) {
-        id = option.prefixFactory() + id;
+    if (option.cycleCounterDigits > 0) {
+        // リングカウンター部あり
+        idSource.cycle = `${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
+    }
+
+
+    // 生成
+    let id: string;
+    if (option.decorate) {
+        id = option.decorate(idSource);
+    } else {
+        id = `${idSource.timestamp}`;
+
+        if (idSource.random && idSource.random.length > 0) {
+            id += `_${idSource.random}`;
+        }
+
+        if (idSource.cycle && idSource.cycle.length > 0) {
+            id += `_${idSource.cycle}`;
+        }
     }
 
     return id;

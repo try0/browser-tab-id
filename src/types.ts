@@ -27,10 +27,14 @@ export interface BrowserTabIdOption {
      * リングカウンター実装
      */
     cycleCounterType: 'local-storage' | 'indexed-db';
+
     /**
-     * プレフィックスを生成する関数
+     * タブIDを補正します。
+     * 
+     * @param idSource 
+     * @returns 
      */
-    prefixFactory?: () => string;
+    decorate?: (idSource: TabIdStringSource) => string;
 
     debugLog: boolean;
 }
@@ -113,7 +117,7 @@ export interface ILockManager {
      * @param options ロックオプション
      */
     withLock<T>(lockName: string, callback: () => Promise<T>, options?: LockOption): Promise<T>;
-    
+
     /**
      * ロックマネージャーをクリーンアップ
      */
@@ -125,3 +129,8 @@ export interface LockOption {
     mode?: 'exclusive' | 'shared';
 }
 
+export interface TabIdStringSource {
+    timestamp: string;
+    random: string;
+    cycle: string;
+}
