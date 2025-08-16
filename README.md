@@ -1,14 +1,20 @@
-時間＋ランダム数字（＋autoincrement）でなるべく重複しないIDを生成して、sessionStorageで管理します。
+時間 + ランダム数字 + インクリメント でなるべく重複しないIDを生成して、sessionStorageで管理します。  
 
 ```
 1755313540998_87226662_0001
 ```
 
 
+* インクリメント部は、[Web Locks API](https://developer.mozilla.org/ja/docs/Web/API/Web_Locks_API)が使える環境であれば、ロックを取得してインクリメント。
+* window.openerがあれば、sessionStorageを直接確認。
+* 別タブとイベントやり取りで重複チェック。
+
+
+
+
 
 ```JS
 const tabId = await BrowserTabId.initialize();
-// 以降　BrowserTabId.get() 可
 ```
 
 ```JS
