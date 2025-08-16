@@ -27,6 +27,11 @@ export interface BrowserTabIdOption {
      * リングカウンター実装
      */
     cycleCounterType: 'local-storage' | 'indexed-db';
+    /**
+     * プレフィックスを生成する関数
+     */
+    prefixFactory?: () => string;
+
     debugLog: boolean;
 }
 

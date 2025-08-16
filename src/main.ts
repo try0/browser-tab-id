@@ -1,6 +1,6 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./storage";
-import type { BrowserTabIdOption, CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData } from "./types";
+import type { CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData } from "./types";
 import { createLogger } from "./log";
 const logger = createLogger();
 
@@ -181,6 +181,10 @@ async function generateTabId(): Promise<string> {
     if (option.cycleCounterDigits > 0) {
         // リングカウンター部あり
         id += `_${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
+    }
+
+    if (option.prefixFactory) {
+        id = option.prefixFactory() + id;
     }
 
     return id;
