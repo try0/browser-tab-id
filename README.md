@@ -4,16 +4,7 @@
 1755313540998_87226662_0001
 ```
 
-sessionStorageが空  
-　→生成  
-↓  
-window.opener.sessionStorageと被っている  
-　→生成  
-↓  
-BroadcastChannelとlocalStorageで重複チェック　別タブと被っている  
-　→生成  
-↓  
-sessionStorageの値をそのまま使用  
+
 
 ```JS
 const tabId = await BrowserTabId.initialize();
