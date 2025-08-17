@@ -1,5 +1,7 @@
 # browser-tab-id
 
+[English](./README.md) | [日本語](./README.ja.md)
+
 Generates an ID that is as unique as possible using time + random number + increment, and manages it with sessionStorage.
 
 ```

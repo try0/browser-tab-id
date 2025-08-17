@@ -1,5 +1,7 @@
 # browser-tab-id
 
+[English](./README.md) | [日本語](./README.ja.md)
+
 時間 + ランダム数字 + インクリメント でなるべく重複しないIDを生成して、sessionStorageで管理します。  
 
 ```
