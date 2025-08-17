@@ -1,17 +1,16 @@
 # browser-tab-id
 
-時間 + ランダム数字 + インクリメント でなるべく重複しないIDを生成して、sessionStorageで管理します。  
+Generates an ID that is as unique as possible using time + random number + increment, and manages it with sessionStorage.
 
 ```
 1755313540998_87226662_0001
 ```
 
-[サンプル](https://try0.github.io/browser-tab-id/index.html)
+[Sample](https://try0.github.io/browser-tab-id/index.html)
 
-* インクリメント部は、[Web Locks API](https://developer.mozilla.org/ja/docs/Web/API/Web_Locks_API)が使える環境であれば、ロックを取得してインクリメント。
-* window.openerがあれば、sessionStorageを直接確認。
-* 別タブとイベントやり取りで重複チェック。
-
+* The increment part uses [Web Locks API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API) for locking and incrementing if available.
+* If `window.opener` exists, checks sessionStorage directly.
+* Checks for duplicates by exchanging events with other tabs.
 
 ## Usage
 
@@ -20,27 +19,24 @@
 npm i @try0/browser-tab-id
 ```
 
-CDNから直
+Direct from CDN
 ```
 <script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@0.0.1/dist/browser-tab-id.umd.min.js"></script>
 ```
 
-
-
-```JS
+```js
 const tabId = await BrowserTabId.initialize();
 ```
 
-```JS
+```js
 const tabId = await BrowserTabId.initialize({
-    tabIdKey: "btid", // sessionStorageのキー。他プレフィックスとして使用。
-    randomDigits: 8, // ランダム数値部桁数。0で省略。
-    duplicateCheckWaitTime: 600, // 他タブへの重複チェックにかける待機時間ミリ秒。
-    cycleCounterDigits: 4, // インクリメント数値部桁数。0で省略。桁超えると最初に戻る。
-    cycleCounterType: "indexed-db", // リングカウンターの記録ストア。 or local-storage。indexed-db使用不可時はlocal-storageへフォールバック。
-    channels: ["broadcast-channel", "local-storage"], // 他タブへの問い合わせ方法。broadcast-channel使用不可時はlocal-storageへフォールバック。
-    decorate: (idSrc) => [idSrc.timestampString, idSrc.randomString, idSrc.cycleCountString].join("_"), // フォーマットの変更。ランダム・カウンター部は0埋めの文字列。
-    debugLog: false, // デバッグ用ログ。
+    tabIdKey: "btid", // Key for sessionStorage. Also used as a prefix.
+    randomDigits: 8, // Number of digits for the random part. Set to 0 to omit.
+    duplicateCheckWaitTime: 600, // Wait time in milliseconds for duplicate check with other tabs.
+    cycleCounterDigits: 4, // Number of digits for the increment part. Set to 0 to omit. Rolls over when exceeding the digit limit.
+    cycleCounterType: "indexed-db", // Storage for the ring counter. Or "local-storage". Falls back to local-storage if indexed-db is unavailable.
+    channels: ["broadcast-channel", "local-storage"], // Methods for communicating with other tabs. Falls back to local-storage if broadcast-channel is unavailable.
+    decorate: (idSrc) => [idSrc.timestampString, idSrc.randomString, idSrc.cycleCountString].join("_"), // Change the format. Random and counter parts are zero-padded strings.
+    debugLog: false, // Enable debug logs.
 });
 ```
-
