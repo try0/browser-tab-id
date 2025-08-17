@@ -10,6 +10,7 @@ export default defineConfig({
         })
     ],
     base: "./",
+    publicDir: isLib ? false : 'public',
     build: isLib ? {
         lib: {
             entry: 'src/main.ts',
