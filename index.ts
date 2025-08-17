@@ -2,7 +2,7 @@ import BrowserTabId from './src/main';
 
 // Promise<string>
 BrowserTabId.initialize({
-    debugLog: false
+    debugLog: true
 }).then(tabId /*: string */ => {
 
     const showTabId = () => {
