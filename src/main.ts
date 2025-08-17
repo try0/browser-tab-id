@@ -143,10 +143,12 @@ function initializeTransports() {
 function handleDuplicateCheckMessage(message: MessageData, transportName: string) {
     const { tabId, requestId } = message;
     const myTabId = get();
-
+    if (logger.isDebug()) {
+        logger.log(`Duplicate check message received on ${transportName}:`, message);
+    }
     if (myTabId && myTabId === tabId) {
         if (logger.isDebug()) {
-            logger.log(`Duplicate check message received on ${transportName}:`, message);
+            logger.log(`Detected duplicate`);
         }
         const response: MessageData = {
             type: "found-duplicate",
