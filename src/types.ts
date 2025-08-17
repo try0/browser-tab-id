@@ -2,7 +2,7 @@
 /**
  * 設定
  */
-export interface BrowserTabIdOption {
+export interface BaseBrowserTabIdOption {
     /**
      * タブIDのキー
      */
@@ -42,9 +42,9 @@ export interface BrowserTabIdOption {
 /**
  * 初期化オプション
  */
-export interface InitializeBrowserTabIdOption extends Partial<BrowserTabIdOption> { }
+export interface BrowserTabIdOption extends Partial<BaseBrowserTabIdOption> { }
 
-export interface InternalBrowserTabIdOption extends BrowserTabIdOption {
+export interface InternalBrowserTabIdOption extends BaseBrowserTabIdOption {
     channelName: string;
     storeName: string;
 }

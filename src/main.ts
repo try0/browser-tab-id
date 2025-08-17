@@ -1,6 +1,6 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./storage";
-import type { CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdStringSource } from "./types";
+import type { CheckLevel, GeneratedState, BrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdStringSource } from "./types";
 import { createLogger } from "./log";
 const logger = createLogger();
 
@@ -144,6 +144,9 @@ function handleDuplicateCheckMessage(message: MessageData, transportName: string
     const myTabId = get();
 
     if (myTabId && myTabId === tabId) {
+        if (option.debugLog) {
+            logger.debug(`Duplicate check message received on ${transportName}:`, message);
+        }
         const response: MessageData = {
             type: "found-duplicate",
             tabId: myTabId,
@@ -276,7 +279,7 @@ export function get(): string {
  * @param initOption 
  * @returns 
  */
-export async function initialize(initOption: InitializeBrowserTabIdOption | null = null): Promise<string> {
+export async function initialize(initOption: BrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
     option = { ...option, ...initOption };
     fixOption();
@@ -336,3 +339,9 @@ export async function initialize(initOption: InitializeBrowserTabIdOption | null
     }
 }
 
+const BrowserTabId = {
+    initialize,
+    get,
+};
+
+export default BrowserTabId;

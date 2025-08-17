@@ -55,7 +55,7 @@ class WebLocksAPIManager implements ILockManager {
  * なんかフォールバック実装できればあとでする
  */
 class NoLockManager implements ILockManager {
-    async withLock<T>(lockName: string, callback: () => Promise<T>, options?: LockOption): Promise<T> {
+    async withLock<T>(_lockName: string, callback: () => Promise<T>, _options?: LockOption): Promise<T> {
         return callback();
     }
 
