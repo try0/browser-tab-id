@@ -1,3 +1,5 @@
+# browser-tab-id
+
 時間 + ランダム数字 + インクリメント でなるべく重複しないIDを生成して、sessionStorageで管理します。  
 
 ```
@@ -11,6 +13,17 @@
 * 別タブとイベントやり取りで重複チェック。
 
 
+## Usage
+
+[npm](https://www.npmjs.com/package/@try0/browser-tab-id)
+```
+npm i @try0/browser-tab-id
+```
+
+CDNから直
+```
+<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@0.0.1/dist/browser-tab-id.umd.min.js"></script>
+```
 
 
 
