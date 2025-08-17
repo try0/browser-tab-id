@@ -5,6 +5,7 @@
 Generates an ID that is as unique as possible using time + random number + increment, and manages it with sessionStorage.
 
 ```
+{timestamp}_{random}_{counter}
 1755313540998_87226662_0001
 ```
 
