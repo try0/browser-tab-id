@@ -1,7 +1,37 @@
 {
-    "name": "browser-tab-id",
-    "private": true,
+    "name": "@try0/browser-tab-id",
     "version": "0.0.1",
+    "description": "Unique browser tab ID generator.",
+    "keywords": [
+        "browser",
+        "tab",
+        "id",
+        "unique",
+        "session",
+        "web"
+    ],
+    "author": "try0 <try0.development@gmail.com>",
+    "license": "MIT",
+    "homepage": "https://github.com/try0/browser-tab-id",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/try0/browser-tab-id.git"
+    },
+    "bugs": {
+        "url": "https://github.com/try0/browser-tab-id/issues"
+    },
+    "main": "dist/browser-tab-id.es.js",
+    "types": "dist/browser-tab-id.es.d.ts",
+    "files": [
+        "dist"
+    ],
+    "exports": {
+        ".": {
+            "import": "./dist/browser-tab-id.es.js",
+            "types": "./dist/browser-tab-id.es.d.ts"
+        }
+    },
+    "sideEffects": false,
     "type": "module",
     "scripts": {
         "dev": "vite",
