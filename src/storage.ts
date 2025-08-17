@@ -64,15 +64,15 @@ class IndexedDBRingCounter implements IRingCounter {
                     addReq.onsuccess = () => {
                         const autoId = addReq.result as number;
                         let modAutoId = autoId % maxCount;
-                        
+
                         if (modAutoId === 0) {
                             setTimeout(() => {
                                 this.cleanup();
                             }, 0);
                         }
 
-                        if (this.option.debugLog) {
-                            logger.debug(`IndexedDB generated unique ID: ${modAutoId} (raw: ${autoId})`);
+                        if (logger.isDebug()) {
+                            logger.log(`IndexedDB generated unique ID: ${modAutoId} (raw: ${autoId})`);
                         }
 
                         resolve(modAutoId);
@@ -103,8 +103,8 @@ class IndexedDBRingCounter implements IRingCounter {
                     const clearReq = store.clear();
 
                     clearReq.onsuccess = () => {
-                        if (this.option.debugLog) {
-                            logger.debug('IndexedDB cleared');
+                        if (logger.isDebug()) {
+                            logger.log('IndexedDB cleared');
                         }
                         db.close();
                         resolve();
@@ -140,12 +140,12 @@ class LocalStorageRingCounter implements IRingCounter {
 
     async increment(): Promise<number> {
         const maxCount = Math.min(10000000, Math.pow(10, this.option.cycleCounterDigits));
-        
+
         // 簡単な排他制御（完全ではないが、localStorage用の軽量実装）
         const lockKey = `${this.counterKey}_lock`;
         const lockTimeout = 1000;
         const lockStart = Date.now();
-        
+
         while (localStorage.getItem(lockKey)) {
             if (Date.now() - lockStart > lockTimeout) {
                 break; // タイムアウト
@@ -155,13 +155,13 @@ class LocalStorageRingCounter implements IRingCounter {
 
         try {
             localStorage.setItem(lockKey, "1");
-            
+
             let counter = parseInt(localStorage.getItem(this.counterKey) || "0", 10);
             counter = (counter + 1) % maxCount;
-            
+
             localStorage.setItem(this.counterKey, counter.toString());
             localStorage.setItem(this.timestampKey, Date.now().toString());
-            
+
             // 定期的にクリーンアップ（カウンターが0に戻った時）
             if (counter === 0) {
                 setTimeout(() => {
@@ -169,8 +169,8 @@ class LocalStorageRingCounter implements IRingCounter {
                 }, 0);
             }
 
-            if (this.option.debugLog) {
-                logger.debug(`localStorage generated unique ID: ${counter}`);
+            if (logger.isDebug()) {
+                logger.log(`localStorage generated unique ID: ${counter}`);
             }
 
             return counter;
@@ -183,8 +183,8 @@ class LocalStorageRingCounter implements IRingCounter {
         try {
             // localStorage版では特別なクリーンアップは不要
             // カウンターは既にリングしているため
-            if (this.option.debugLog) {
-                logger.debug('localStorage counter reset to ring');
+            if (logger.isDebug()) {
+                logger.log('localStorage counter reset to ring');
             }
         } catch (error) {
             logger.warn(`Failed to cleanup localStorage counter:`, error);
@@ -206,7 +206,7 @@ class RingCounterFactory {
                 logger.warn('IndexedDB not available, falling back to localStorage:', error);
             }
         }
-        
+
         // フォールバックまたは明示的にlocalStorage使用
         return new LocalStorageRingCounter(option);
     }

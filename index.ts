@@ -1,16 +1,26 @@
-import { checkLevel, initialize, state } from './src/main';
+import BrowserTabId from './src/main';
+
+// Promise<string>
+BrowserTabId.initialize({
+    debugLog: false
+}).then(tabId /*: string */ => {
+
+    const showTabId = () => {
+        document.querySelector('#tab-id')!.textContent = tabId;
+        document.querySelector('#state')!.textContent
+            = `State: ${BrowserTabId.getState()}, Check Level: ${BrowserTabId.getCheckLevel()}`;
+    }
+
+    if (document.readyState === "complete") {
+        showTabId();
+    } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            showTabId();
+        });
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    initialize({
-        debugLog: true
-    }).then(tabId => {
-        document.querySelector('#tab-id')!.textContent = tabId;
-
-        document.querySelector('#state')!.textContent
-            = `State: ${state}, Check Level: ${checkLevel}`;
-    });
-
     document.querySelector('#linkOpener')!.addEventListener('click', (e) => {
         e.preventDefault();
         window.open('./index.html', '_blank');

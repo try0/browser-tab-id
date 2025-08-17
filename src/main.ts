@@ -1,17 +1,18 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./storage";
 import type { CheckLevel, GeneratedState, BrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdStringSource } from "./types";
-import { createLogger } from "./log";
+import { createLogger, LoggerState } from "./log";
 const logger = createLogger();
 
 /**
  * 生成状況
  */
-export let state: GeneratedState = "no-id";
+let state: GeneratedState = "no-id";
 /**
  * 重複チェックレベル
  */
-export let checkLevel: CheckLevel = "no-check";
+let checkLevel: CheckLevel = "no-check";
+
 
 /**
  * 設定
@@ -46,8 +47,8 @@ async function checkDuplicateWithOtherTabs(tabId: string): Promise<boolean> {
         const resolveOnce = (found: boolean, transportName: string) => {
             if (!resolved) {
                 resolved = true;
-                if (option.debugLog) {
-                    logger.debug(`Duplicate check resolved by ${transportName}: found=${found}, responses=${responseCount}`);
+                if (logger.isDebug()) {
+                    logger.log(`Duplicate check resolved by ${transportName}: found=${found}, responses=${responseCount}`);
                 }
                 resolve(found);
             }
@@ -127,8 +128,8 @@ function initializeTransports() {
         }
     });
 
-    if (option.debugLog) {
-        logger.debug(`Initialized transports:`, transportRacer.getTransportNames());
+    if (logger.isDebug()) {
+        logger.log(`Initialized transports:`, transportRacer.getTransportNames());
     }
 
     window.addEventListener("beforeunload", () => {
@@ -144,8 +145,8 @@ function handleDuplicateCheckMessage(message: MessageData, transportName: string
     const myTabId = get();
 
     if (myTabId && myTabId === tabId) {
-        if (option.debugLog) {
-            logger.debug(`Duplicate check message received on ${transportName}:`, message);
+        if (logger.isDebug()) {
+            logger.log(`Duplicate check message received on ${transportName}:`, message);
         }
         const response: MessageData = {
             type: "found-duplicate",
@@ -265,6 +266,24 @@ function fixOption() {
 }
 
 /**
+ * 生成状況を取得します。
+ * 
+ * @returns 
+ */
+export function getState(): GeneratedState {
+    return state;
+}
+
+/**
+ * 重複検出処理実行レベルを取得します。
+ * 
+ * @returns 
+ */
+export function getCheckLevel(): CheckLevel {
+    return checkLevel;
+}
+
+/**
  * セッションストレージからタブIDを取得します。
  * 
  * @returns 
@@ -283,9 +302,10 @@ export async function initialize(initOption: BrowserTabIdOption | null = null): 
     // 設定初期化
     option = { ...option, ...initOption };
     fixOption();
+    LoggerState.isDebug = option.debugLog;
 
-    if (option.debugLog) {
-        logger.debug("Initializing with options:", option);
+    if (logger.isDebug()) {
+        logger.log("Initializing with options:", option);
     }
 
     initializeTransports();
@@ -300,7 +320,6 @@ export async function initialize(initOption: BrowserTabIdOption | null = null): 
         setTabId(tabId);
         return tabId;
     }
-
 
     checkLevel = "opener-session-storage";
     if (window && window.opener && window.opener.sessionStorage) {
@@ -339,9 +358,15 @@ export async function initialize(initOption: BrowserTabIdOption | null = null): 
     }
 }
 
+/**
+ * BrowserTabIdのインターフェース
+ * esとumdの互換用
+ */
 const BrowserTabId = {
     initialize,
     get,
+    getCheckLevel,
+    getState
 };
 
 export default BrowserTabId;

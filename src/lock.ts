@@ -54,15 +54,14 @@ class WebLocksAPIManager implements ILockManager {
  * 非対応時は何もしない
  * なんかフォールバック実装できればあとでする
  */
-class NoLockManager implements ILockManager {
+const noLockManager: ILockManager = {
     async withLock<T>(_lockName: string, callback: () => Promise<T>, _options?: LockOption): Promise<T> {
         return callback();
-    }
-
+    },
     cleanup(): void {
         // 何もしない
     }
-}
+};
 
 /**
  * ロックマネージャーファクトリー
@@ -79,11 +78,15 @@ export class LockManagerFactory {
 
     private static createLockManager(): ILockManager {
         if (this.isWebLocksAPIAvailable()) {
-            logger.debug('createLockManager Using Web Locks API');
+            if (logger.isDebug()) {
+                logger.log('createLockManager Using Web Locks API');
+            }
             return new WebLocksAPIManager();
         } else {
-            logger.debug('createLockManager Disabled locks');
-            return new NoLockManager();
+            if (logger.isDebug()) {
+                logger.log('createLockManager Disabled locks');
+            }
+            return noLockManager;
         }
     }
 

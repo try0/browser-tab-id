@@ -1,9 +1,10 @@
 const LOG_PREFIX = "[BrowserTabId]";
-let isEnabled = true;
-
-export function setLogEnabled(enabled: boolean): void {
-    isEnabled = enabled;
-}
+/**
+ * ロガーの状態
+ */
+export const LoggerState = {
+    isDebug: false
+};
 
 /**
  * ロガーを生成します。
@@ -11,10 +12,13 @@ export function setLogEnabled(enabled: boolean): void {
  * @returns 
  */
 export function createLogger() {
+    // コンソールのリンクを呼び出し元にしときたいから、デバッグログは呼び出し元でisDebugをチェック
+    // なんかほかに方法ないのか？？
     return {
-        debug: isEnabled ? console.log.bind(console, `${LOG_PREFIX} [DEBUG]`) : () => {},
-        info: isEnabled ? console.info.bind(console, `${LOG_PREFIX} [INFO]`) : () => {},
-        warn: isEnabled ? console.warn.bind(console, `${LOG_PREFIX} [WARN]`) : () => {},
-        error: isEnabled ? console.error.bind(console, `${LOG_PREFIX} [ERROR]`) : () => {}
+        log: console.log.bind(console, `${LOG_PREFIX} [DEBUG]`),
+        info: console.info.bind(console, `${LOG_PREFIX} [INFO]`),
+        warn: console.warn.bind(console, `${LOG_PREFIX} [WARN]`),
+        error: console.error.bind(console, `${LOG_PREFIX} [ERROR]`),
+        isDebug: () => LoggerState.isDebug
     };
 }
