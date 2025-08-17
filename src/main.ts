@@ -1,6 +1,6 @@
 import { BroadcastChannelTransport, LocalStorageTransport, TransportRacer } from "./channel";
 import { incrementCycleCounter } from "./storage";
-import type { CheckLevel, GeneratedState, IdSource, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdSource, TabIdStringSource } from "./types";
+import type { CheckLevel, GeneratedState, InitializeBrowserTabIdOption, InternalBrowserTabIdOption, MessageData, TabIdStringSource } from "./types";
 import { createLogger } from "./log";
 const logger = createLogger();
 
@@ -162,14 +162,14 @@ function handleDuplicateCheckMessage(message: MessageData, transportName: string
  */
 async function generateTabId(): Promise<string> {
     const idSource: TabIdStringSource = {
-        timestamp: "",
-        random: "",
-        cycle: ""
+        timestampString: "",
+        randomString: "",
+        cycleCountString: ""
     };
 
 
     // 時間ベースとランダム数値を組み合わせて生成
-    idSource.timestamp = Date.now().toString();
+    idSource.timestampString = Date.now().toString();
 
     let cycleNumber: number = 0;
     try {
@@ -183,12 +183,12 @@ async function generateTabId(): Promise<string> {
     if (option.randomDigits > 0) {
         // ランダム部あり
         const random = generateRandomNumber();
-        idSource.random = `${random}`;
+        idSource.randomString = `${random}`;
     }
 
     if (option.cycleCounterDigits > 0) {
         // リングカウンター部あり
-        idSource.cycle = `${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
+        idSource.cycleCountString = `${cycleNumber.toString().padStart(option.cycleCounterDigits, '0')}`;
     }
 
 
@@ -197,14 +197,14 @@ async function generateTabId(): Promise<string> {
     if (option.decorate) {
         id = option.decorate(idSource);
     } else {
-        id = `${idSource.timestamp}`;
+        id = `${idSource.timestampString}`;
 
-        if (idSource.random && idSource.random.length > 0) {
-            id += `_${idSource.random}`;
+        if (idSource.randomString && idSource.randomString.length > 0) {
+            id += `_${idSource.randomString}`;
         }
 
-        if (idSource.cycle && idSource.cycle.length > 0) {
-            id += `_${idSource.cycle}`;
+        if (idSource.cycleCountString && idSource.cycleCountString.length > 0) {
+            id += `_${idSource.cycleCountString}`;
         }
     }
 

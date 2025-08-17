@@ -130,7 +130,7 @@ export interface LockOption {
 }
 
 export interface TabIdStringSource {
-    timestamp: string;
-    random: string;
-    cycle: string;
+    timestampString: string;
+    randomString: string;
+    cycleCountString: string;
 }

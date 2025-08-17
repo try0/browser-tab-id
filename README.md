@@ -21,11 +21,13 @@ const tabId = await BrowserTabId.initialize();
 ```JS
 const tabId = await BrowserTabId.initialize({
     tabIdKey: "btid", // sessionStorageのキー。他プレフィックスとして使用。
-    randomDigits: 8, // ランダム数値部桁数。0でランダム部省略。
+    randomDigits: 8, // ランダム数値部桁数。0で省略。
     duplicateCheckWaitTime: 600, // 他タブへの重複チェックにかける待機時間ミリ秒。
-    cycleCounterDigits: 4, // インクリメント数値部桁数。0で省略。
+    cycleCounterDigits: 4, // インクリメント数値部桁数。0で省略。桁超えると最初に戻る。
     cycleCounterType: "indexed-db", // リングカウンターの記録ストア。 or local-storage。indexed-db使用不可時はlocal-storageへフォールバック。
-    channels: ['broadcast-channel', 'local-storage'], // 他タブへの問い合わせ方法。broadcast-channel使用不可時はlocal-storageへフォールバック。
+    channels: ["broadcast-channel", "local-storage"], // 他タブへの問い合わせ方法。broadcast-channel使用不可時はlocal-storageへフォールバック。
+    decorate: (idSrc) => [idSrc.timestampString, idSrc.randomString, idSrc.cycleCountString].join("_"), // フォーマットの変更。ランダム・カウンター部は0埋めの文字列。
     debugLog: false, // デバッグ用ログ。
 });
 ```
+
