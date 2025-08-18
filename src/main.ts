@@ -372,3 +372,5 @@ const BrowserTabId = {
 };
 
 export default BrowserTabId;
+
+export type { BrowserTabIdOption, TabIdStringSource, GeneratedState, CheckLevel } from './types';
