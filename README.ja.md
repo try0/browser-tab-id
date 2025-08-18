@@ -30,11 +30,11 @@ CDNから直
 ```
 
 
-
 ```JS
 const tabId = await BrowserTabId.initialize();
 ```
 
+Options
 ```JS
 const tabId = await BrowserTabId.initialize({
     tabIdKey: "btid", // sessionStorageのキー。他プレフィックスとして使用。
@@ -48,3 +48,13 @@ const tabId = await BrowserTabId.initialize({
 });
 ```
 
+
+```ts
+import BrowserTabId , { type BrowserTabIdOption, type TabIdStringSource } from '@try0/browser-tab-id'
+
+const btOption: BrowserTabIdOption = {
+
+}
+let tabId: string = await BrowserTabId.initialize(btOption);
+
+```
