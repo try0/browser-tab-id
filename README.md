@@ -9,8 +9,6 @@ Generates an ID that is as unique as possible using time + random number + incre
 1755313540998_87226662_0001
 ```
 
-[Sample](https://try0.github.io/browser-tab-id/index.html)
-
 * The increment part uses [Web Locks API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API) for locking and incrementing if available.
 * If `window.opener` exists, checks sessionStorage directly.
 * Checks for duplicates by exchanging events with other tabs.
@@ -20,11 +18,6 @@ Generates an ID that is as unique as possible using time + random number + incre
 [npm](https://www.npmjs.com/package/@try0/browser-tab-id)
 ```
 npm i @try0/browser-tab-id
-```
-
-Direct from CDN
-```
-<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@latest/dist/browser-tab-id.umd.min.js"></script>
 ```
 
 ```js
@@ -54,3 +47,14 @@ const btOption: BrowserTabIdOption = {
 let tabId: string = await BrowserTabId.initialize(btOption);
 
 ```
+
+
+Direct from CDN
+```
+<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@latest/dist/browser-tab-id.umd.min.js"></script>
+```
+
+
+## Demo
+
+[Sample](https://try0.github.io/browser-tab-id/index.html)

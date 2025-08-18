@@ -24,12 +24,6 @@
 npm i @try0/browser-tab-id
 ```
 
-CDNから直
-```
-<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@latest/dist/browser-tab-id.umd.min.js"></script>
-```
-
-
 ```JS
 const tabId = await BrowserTabId.initialize();
 ```
@@ -58,3 +52,13 @@ const btOption: BrowserTabIdOption = {
 let tabId: string = await BrowserTabId.initialize(btOption);
 
 ```
+
+CDNから直
+```
+<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@latest/dist/browser-tab-id.umd.min.js"></script>
+```
+
+
+## デモ
+
+[Sample](https://try0.github.io/browser-tab-id/index.html)
