@@ -13,11 +13,10 @@ let state: GeneratedState = "no-id";
  */
 let checkLevel: CheckLevel = "no-check";
 
-
 /**
- * 設定
+ * デフォルトオプション
  */
-let option: InternalBrowserTabIdOption = {
+const defaultOption: InternalBrowserTabIdOption = {
     tabIdKey: "btid",
     randomDigits: 8,
     duplicateCheckWaitTime: 600,
@@ -28,6 +27,11 @@ let option: InternalBrowserTabIdOption = {
     cycleCounterType: "indexed-db",
     channels: ['broadcast-channel', 'local-storage'],
 };
+
+/**
+ * 設定
+ */
+let option: InternalBrowserTabIdOption = { ...defaultOption };
 
 
 let transportRacer: TransportRacer | null = null;
@@ -302,7 +306,7 @@ export function get(): string {
  */
 export async function initialize(initOption: BrowserTabIdOption | null = null): Promise<string> {
     // 設定初期化
-    option = { ...option, ...initOption };
+    option = { ...defaultOption, ...initOption };
     fixOption();
     LoggerState.isDebug = option.debugLog;
 
