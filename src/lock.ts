@@ -6,7 +6,7 @@ const logger = createLogger();
 /**
  * Web Locks APIベースの実装
  */
-class WebLocksAPIManager implements ILockManager {
+export class WebLocksAPIManager implements ILockManager {
     /**
      * 排他ロックを取得して処理を実行
      * @param lockName ロック名
@@ -51,17 +51,54 @@ class WebLocksAPIManager implements ILockManager {
 }
 
 /**
- * 非対応時は何もしない
- * なんかフォールバック実装できればあとでする
+ * 簡易ロック実装
  */
-const noLockManager: ILockManager = {
-    async withLock<T>(_lockName: string, callback: () => Promise<T>, _options?: LockOption): Promise<T> {
-        return callback();
-    },
-    cleanup(): void {
-        // 何もしない
+export class LocalStorageBestEffortLockManager implements ILockManager {
+    async withLock<T>(lockName: string, callback: () => Promise<T>, options: LockOption = {}): Promise<T> {
+        const timeout = options.timeout ?? 1000;
+        const expire = Date.now() + timeout;
+        const pollInterval = 10;
+        let acquired = false;
+
+        // ロック取得
+        while (!acquired) {
+            const now = Date.now();
+            const lockValue = localStorage.getItem(lockName);
+            if (!lockValue || Number(lockValue) < now) {
+                try {
+                    localStorage.setItem(lockName, String(expire));
+                    // 直後に自分がロック保持者か再確認
+                    if (localStorage.getItem(lockName) === String(expire)) {
+                        acquired = true;
+                        break;
+                    }
+                } catch { }
+            }
+
+            if (now > expire) {
+                throw new Error(`Lock timeout after ${timeout}ms`);
+            }
+
+            await new Promise(r => setTimeout(r, pollInterval));
+        }
+
+        try {
+            return await callback();
+        } finally {
+            // ロック解放
+            if (localStorage.getItem(lockName) === String(expire)) {
+                localStorage.removeItem(lockName);
+            }
+        }
     }
-};
+
+    cleanup(): void {
+        // 特に何もしない
+    }
+}
+
+
+
 
 /**
  * ロックマネージャーファクトリー
@@ -77,6 +114,7 @@ export class LockManagerFactory {
     }
 
     private static createLockManager(): ILockManager {
+
         if (this.isWebLocksAPIAvailable()) {
             if (logger.isDebug()) {
                 logger.log('createLockManager Using Web Locks API');
@@ -84,9 +122,9 @@ export class LockManagerFactory {
             return new WebLocksAPIManager();
         } else {
             if (logger.isDebug()) {
-                logger.log('createLockManager Disabled locks');
+                logger.log('createLockManager Using LocalStorage Lock');
             }
-            return noLockManager;
+            return new LocalStorageBestEffortLockManager();
         }
     }
 
@@ -108,3 +146,4 @@ if (typeof window !== 'undefined') {
         LockManagerFactory.cleanup();
     });
 }
+

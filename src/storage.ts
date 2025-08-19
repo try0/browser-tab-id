@@ -6,7 +6,7 @@ const logger = createLogger();
 /**
  * Ring Counterの抽象インターフェース
  */
-interface IRingCounter {
+export interface IRingCounter {
     increment(): Promise<number>;
     cleanup(): Promise<void>;
 }
@@ -14,7 +14,7 @@ interface IRingCounter {
 /**
  * IndexedDB実装のRing Counter
  */
-class IndexedDBRingCounter implements IRingCounter {
+export class IndexedDBRingCounter implements IRingCounter {
     private static readonly OBJECT_STORE_NAME = "ids";
     private static readonly DB_VERSION = 1;
 
@@ -126,10 +126,9 @@ class IndexedDBRingCounter implements IRingCounter {
 /**
  * localStorage実装のRing Counter
  */
-class LocalStorageRingCounter implements IRingCounter {
+export class LocalStorageRingCounter implements IRingCounter {
     private readonly counterKey: string;
     private readonly timestampKey: string;
-
     private option: InternalBrowserTabIdOption;
 
     constructor(option: InternalBrowserTabIdOption) {
@@ -140,22 +139,10 @@ class LocalStorageRingCounter implements IRingCounter {
 
     async increment(): Promise<number> {
         const maxCount = Math.min(10000000, Math.pow(10, this.option.cycleCounterDigits));
+        const lockName = `${this.counterKey}_lock`;
+        const lockManager = LockManagerFactory.getInstance();
 
-        // 簡単な排他制御（完全ではないが、localStorage用の軽量実装）
-        const lockKey = `${this.counterKey}_lock`;
-        const lockTimeout = 1000;
-        const lockStart = Date.now();
-
-        while (localStorage.getItem(lockKey)) {
-            if (Date.now() - lockStart > lockTimeout) {
-                break; // タイムアウト
-            }
-            await new Promise(resolve => setTimeout(resolve, 10));
-        }
-
-        try {
-            localStorage.setItem(lockKey, "1");
-
+        return lockManager.withLock(lockName, async () => {
             let counter = parseInt(localStorage.getItem(this.counterKey) || "0", 10);
             counter = (counter + 1) % maxCount;
 
@@ -174,15 +161,11 @@ class LocalStorageRingCounter implements IRingCounter {
             }
 
             return counter;
-        } finally {
-            localStorage.removeItem(lockKey);
-        }
+        }, { timeout: 1000 });
     }
 
     async cleanup(): Promise<void> {
         try {
-            // localStorage版では特別なクリーンアップは不要
-            // カウンターは既にリングしているため
             if (logger.isDebug()) {
                 logger.log('localStorage counter reset to ring');
             }
@@ -195,7 +178,7 @@ class LocalStorageRingCounter implements IRingCounter {
 /**
  * Ring Counter Factory
  */
-class RingCounterFactory {
+export class RingCounterFactory {
     static createRingCounter(option: InternalBrowserTabIdOption): IRingCounter {
         if (option.cycleCounterType === 'indexed-db') {
             try {
