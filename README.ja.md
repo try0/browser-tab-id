@@ -47,7 +47,7 @@ import BrowserTabId , { type BrowserTabIdOption, type TabIdStringSource } from '
 const btOption: BrowserTabIdOption = {
 
 }
-let tabId: string = await BrowserTabId.initialize(btOption);
+const tabId: string = await BrowserTabId.initialize(btOption);
 
 ```
 
