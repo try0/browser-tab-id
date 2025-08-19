@@ -1,6 +1,6 @@
 {
     "name": "@try0/browser-tab-id",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "Unique browser tab ID generator.",
     "keywords": [
         "browser",
