@@ -22,11 +22,12 @@
 npm i @try0/browser-tab-id
 ```
 
+最小構成
 ```JS
 const tabId = await BrowserTabId.initialize();
 ```
 
-Options
+全オプション
 ```JS
 const tabId = await BrowserTabId.initialize({
     tabIdKey: "btid", // sessionStorageのキー。他プレフィックスとして使用。
@@ -40,7 +41,7 @@ const tabId = await BrowserTabId.initialize({
 });
 ```
 
-
+TypeScript
 ```ts
 import BrowserTabId , { type BrowserTabIdOption, type TabIdStringSource } from '@try0/browser-tab-id'
 
@@ -49,6 +50,13 @@ const btOption: BrowserTabIdOption = {
 }
 const tabId: string = await BrowserTabId.initialize(btOption);
 
+```
+
+既存のID生成ロジックへの移譲
+```JS
+const tabId = await BrowserTabId.initialize({
+     decorate: (idSrc) => ulid()
+});
 ```
 
 CDNから直

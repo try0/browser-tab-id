@@ -20,10 +20,12 @@ Generates an ID that is as unique as possible using time + random number + incre
 npm i @try0/browser-tab-id
 ```
 
+Minimal usage
 ```js
 const tabId = await BrowserTabId.initialize();
 ```
 
+All options
 ```js
 const tabId = await BrowserTabId.initialize({
     tabIdKey: "btid", // Key for sessionStorage. Also used as a prefix.
@@ -37,7 +39,7 @@ const tabId = await BrowserTabId.initialize({
 });
 ```
 
-
+TypeScript
 ```ts
 import BrowserTabId , { type BrowserTabIdOption, type TabIdStringSource } from '@try0/browser-tab-id'
 
@@ -48,6 +50,12 @@ const tabId: string = await BrowserTabId.initialize(btOption);
 
 ```
 
+Delegating to an existing ID generation logic
+```JS
+const tabId = await BrowserTabId.initialize({
+     decorate: (idSrc) => ulid()
+});
+```
 
 Direct from CDN
 ```
