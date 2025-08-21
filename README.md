@@ -59,8 +59,12 @@ const tabId = await BrowserTabId.initialize({
 
 Direct from CDN
 ```
-<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@latest/dist/browser-tab-id.umd.min.js"></script>
+<script src="https://unpkg.com/@try0/browser-tab-id@0.0.4/dist/browser-tab-id.umd.js"></script>
 ```
+```
+<script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@0.0.4/dist/browser-tab-id.umd.js"></script>
+```
+
 
 
 ## Demo
