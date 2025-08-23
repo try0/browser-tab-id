@@ -7,11 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="format-detection" content="telephone=no">
     <title>browser-tab-id</title>
-    <script type="module" src="./src/main.ts"></script>
 
-    <script type="module">
-        import BrowserTabId from './src/main';
 
+    <!-- <script type="module" src="./src/main.ts"></script> -->
+    <!-- <script type="module">
+        import BrowserTabId from './src/main'; -->
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@try0/browser-tab-id@0.0.4/dist/browser-tab-id.umd.js"></script>
+    <script>
         // Promise<string>
         BrowserTabId.initialize({
             debugLog: true
