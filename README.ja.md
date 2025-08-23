@@ -2,7 +2,7 @@
 
 [English](./README.md) | [日本語](./README.ja.md)
 
-時間 + ランダム数字 + インクリメント でなるべく重複しないIDを生成して、sessionStorageで管理します。  
+時間 + ランダム数字 + インクリメント でIDを生成して、タブ間でなるべく重複しないようsessionStorageで管理します。  
 
 
 ```
