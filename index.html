@@ -1,14 +1,77 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="format-detection" content="telephone=no">
-    <title>Vite + TS</title>
+    <title>browser-tab-id</title>
     <script type="module" src="./src/main.ts"></script>
-    <script type="module" src="./index.ts"></script>
+
+    <script type="module">
+        import BrowserTabId from './src/main';
+
+        // Promise<string>
+        BrowserTabId.initialize({
+            debugLog: true
+        }).then(tabId /*: string */ => {
+
+            const showTabId = () => {
+                document.querySelector('#tab-id').textContent = tabId;
+                document.querySelector('#state').textContent
+                    = `State: ${BrowserTabId.getState()}, Check Level: ${BrowserTabId.getCheckLevel()}`;
+            }
+
+            if (document.readyState === "complete") {
+                showTabId();
+            } else {
+                document.addEventListener('DOMContentLoaded', () => {
+                    showTabId();
+                });
+            }
+        });
+
+        const isJapanese = navigator.language.startsWith('ja');
+        const texts = {
+            ja: {
+                title: "Browser Tab Id",
+                desc: "時間 + ランダム数字 + インクリメント のIDを生成し、sessionStorageで管理します。",
+                openNewTab: "新しいタブで開く",
+                openNewTabOpener: "新しいタブで開く (opener)",
+                openNewTabNoOpener: "新しいタブで開く (noopener)",
+                duplicate: "タブ→右クリック→タブを複製でもIDが生成されます。"
+            },
+            en: {
+                title: "Browser Tab Id",
+                desc: "Generates an ID using time + random number + increment, and manages it with sessionStorage.",
+                openNewTab: "Open in new tab",
+                openNewTabOpener: "Open in new tab (opener)",
+                openNewTabNoOpener: "Open in new tab (noopener)",
+                duplicate: "You can also generate an ID by duplicating the tab (right-click → Duplicate tab)."
+            }
+        };
+        const t = isJapanese ? texts.ja : texts.en;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('#linkOpener').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open('./index.html', '_blank');
+            });
+
+            document.querySelector('#linkNoOpener').addEventListener('click', (e) => {
+                e.preventDefault();
+                window.open('./index.html', '_blank', 'noopener');
+            });
+
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('desc').textContent = t.desc;
+            document.getElementById('linkNewTab').textContent = t.openNewTab;
+            document.getElementById('linkOpener').textContent = t.openNewTabOpener;
+            document.getElementById('linkNoOpener').textContent = t.openNewTabNoOpener;
+            document.getElementById('duplicateDesc').textContent = t.duplicate;
+        });
+    </script>
 
     <style>
         .container {
@@ -24,17 +87,16 @@
 
 <body>
     <div class="container">
-        <h1>Browser Tab Id</h1>
+        <h1 id="title">Browser Tab Id</h1>
         <div>
-            <p>時間 + ランダム数字 + インクリメント のIDを生成し、sessionStorageで管理します。</p>
+            <p id="desc">時間 + ランダム数字 + インクリメント のIDを生成し、sessionStorageで管理します。</p>
         </div>
 
         <h2 id="tab-id"></h2>
-        <div id="state">          
-        </div>
+        <div id="state"></div>
 
         <div style="padding:0.5rem;">
-            <a href="./index.html" target="_blank">新しいタブで開く</a>
+            <a href="./index.html" target="_blank" id="linkNewTab">新しいタブで開く</a>
         </div>
         <div style="padding:0.5rem;">
             <a href="#" id="linkOpener">新しいタブで開く (opener)</a>
@@ -43,7 +105,7 @@
             <a href="#" id="linkNoOpener">新しいタブで開く (noopener)</a>
         </div>
         <div style="padding:0.5rem;">
-            タブ→右クリック→タブを複製でもIDが生成されます。
+            <span id="duplicateDesc">タブ→右クリック→タブを複製でもIDが生成されます。</span>
         </div>
     </div>
 
