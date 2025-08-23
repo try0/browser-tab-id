@@ -2,7 +2,7 @@
 
 [English](./README.md) | [日本語](./README.ja.md)
 
-Generates an ID by combining a timestamp, a random number, and an incrementing counter, and stores it in sessionStorage to minimize duplicates.
+Generates an ID by combining a timestamp, a random number, and an incrementing counter, stores it in sessionStorage, and helps minimize duplicates across tabs.
 
 ```
 {timestamp}_{random}_{counter}
