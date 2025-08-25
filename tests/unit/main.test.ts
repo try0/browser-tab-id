@@ -207,7 +207,7 @@ describe('タブ間重複チェックのタイムアウト', () => {
     });
 
         it('duplicateCheckWaitTime 長め', async () => {
-        // タイムアウトを短く設定
+        // タイムアウトを長く設定
         const waitTime = 3000;
         // transportRacerのbroadcast/onMessageが何も返さない（応答がない）状況を作る
         // ここでは通常通りinitializeを呼ぶだけでOK（他タブがいないので応答なし）
