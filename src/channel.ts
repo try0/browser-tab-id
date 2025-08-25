@@ -4,6 +4,24 @@ import { createLogger } from "./log";
 const logger = createLogger();
 
 /**
+ * メッセージデータの型をチェックします。
+ * @param obj チェック対象のオブジェクト
+ * @returns 
+ */
+export function isMessageData(obj: any): obj is MessageData {
+    if (obj === null || obj === undefined) {
+        return false;
+    }
+
+    return (
+        typeof obj === "object" &&
+        typeof obj.type === "string" &&
+        typeof obj.requestId === "string" &&
+        (typeof obj.tabId === "string" || obj.tabId === null)
+    );
+}
+
+/**
  * BroadcastChannel トランスポート実装
  * iOSだとバックグラウンドタブとの通信うまくいかないかも
  */
@@ -23,6 +41,10 @@ export class BroadcastChannelTransport implements Transport {
 
     private handleMessage(event: MessageEvent) {
         if (event.data && typeof event.data === "object" && this.messageCallback) {
+            if (!isMessageData(event.data)) {
+                logger.warn(`Received invalid message data:`, event.data);
+                return;
+            }
             this.messageCallback(event.data as MessageData);
         }
     }
@@ -62,6 +84,10 @@ export class LocalStorageTransport implements Transport {
         if (event.key && event.key.startsWith(`${this.keyPrefix}_`) && event.newValue && this.messageCallback) {
             try {
                 const message = JSON.parse(event.newValue) as MessageData;
+                if (!isMessageData(message)) {
+                    logger.warn(`Received invalid message data:`, message);
+                    return;
+                }
                 this.messageCallback(message);
             } catch (e) {
                 // JSON parse エラーは無視

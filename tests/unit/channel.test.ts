@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LocalStorageTransport, BroadcastChannelTransport, TransportRacer } from '../../src/channel';
+import { LocalStorageTransport, BroadcastChannelTransport, TransportRacer, isMessageData } from '../../src/channel';
 import { MessageData } from '../../src/types';
 
 describe('LocalStorageTransport', () => {
@@ -132,5 +132,60 @@ describe('TransportRacer', () => {
 
     it('getTransportNamesでトランスポート名が取得できる', () => {
         expect(racer.getTransportNames()).toEqual(['localStorage']);
+    });
+});
+
+
+
+describe("isMessageData", () => {
+    it("正しいMessageData型のオブジェクトの場合はtrueを返す", () => {
+        const obj = {
+            type: "test",
+            requestId: "req-1",
+            tabId: "tab-1"
+        };
+        expect(isMessageData(obj)).toBe(true);
+    });
+
+    it("tabIdがnullでもtrueを返す", () => {
+        const obj = {
+            type: "test",
+            requestId: "req-2",
+            tabId: null
+        };
+        expect(isMessageData(obj)).toBe(true);
+    });
+
+    it("typeがstringでない場合はfalseを返す", () => {
+        const obj = {
+            type: 123,
+            requestId: "req-3",
+            tabId: "tab-3"
+        };
+        expect(isMessageData(obj)).toBe(false);
+    });
+
+    it("requestIdがstringでない場合はfalseを返す", () => {
+        const obj = {
+            type: "test",
+            requestId: 456,
+            tabId: "tab-4"
+        };
+        expect(isMessageData(obj)).toBe(false);
+    });
+
+    it("tabIdがstringでもnullでもない場合はfalseを返す", () => {
+        const obj = {
+            type: "test",
+            requestId: "req-5",
+            tabId: 789
+        };
+        expect(isMessageData(obj)).toBe(false);
+    });
+
+    it("オブジェクトでない値の場合はfalseを返す", () => {
+        expect(isMessageData(null)).toBe(false);
+        expect(isMessageData(undefined)).toBe(false);
+        expect(isMessageData("string")).toBe(false);
     });
 });
