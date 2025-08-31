@@ -2,6 +2,8 @@
 
 [English](./README.md) | [日本語](./README.ja.md)
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/try0/browser-tab-id)
+
 Generates an ID by combining a timestamp, a random number, and an incrementing counter, stores it in sessionStorage, and helps minimize duplicates across tabs.
 
 ```
